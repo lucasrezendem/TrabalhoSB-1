@@ -1,11 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 
-
-
-
 void leAsm (char *nome){
-	char palavra[50],c, nomeExt[200];
+	char palavra[50],c, b,nomeExt[200];
 	int tam;
 	FILE *fp = fopen (nome, "r");
 	if(!fp){
@@ -17,13 +14,24 @@ void leAsm (char *nome){
 	strcat(nomeExt,"pre");
 	
 
-	FILE *fp1 = fopen (nomeExt, "r+");
+	FILE *fp1 = fopen (nomeExt, "w+");
+
 	if(!fp1){
 		printf("Erro ao criar abrir arquivo .pre");
 	}
+	
 
 	while (c!=EOF){
 		c= fgetc(fp);
+		if (c==';'){
+			do{
+				c= fgetc(fp);
+			}while (c!=EOF && c!=';');
+			c= fgetc(fp);
+		}
+
+
+
 		if(c!='\n' && c!= ' ' && c!= '\t'&& c!=EOF){
 			fseek(fp, -1 ,SEEK_CUR);
 			fscanf(fp, "%s", palavra);
@@ -31,8 +39,15 @@ void leAsm (char *nome){
 			fprintf(fp1, "%s", palavra);
 			c= fgetc(fp);
 			fprintf(fp1, "%c", c);
-
-			
+		}
+		else{
+			do{
+				b = fgetc(fp);
+			}while(c==b);
+			if(b==EOF || c==EOF)
+				break;
+			fseek(fp, -1 ,SEEK_CUR);
+			fprintf(fp1, "%c", c);
 		}
 	}
 	getchar();
@@ -44,6 +59,5 @@ int main (){
 
 	leAsm("triangulo.asm");
 	printf("saiu!!");
-	leAsm("triangulo.asm");
 return 0;
 }
