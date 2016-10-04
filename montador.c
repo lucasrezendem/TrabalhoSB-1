@@ -11,6 +11,18 @@ typedef struct listAux {
 
 } list;
 
+void libera (list *aux1){
+list *aux2 = aux1;
+
+   while (aux1 != NULL)
+    {
+       aux2 = aux1;
+       aux1 = aux1->next;
+       free(aux2);
+    }
+
+}
+
 list *add (list *l, int val, char *label){
 	list *novo = NULL;
 
@@ -24,8 +36,17 @@ list *add (list *l, int val, char *label){
 
 int checaIf (list *l, char *nome){
 	list *aux = l;
-	while (aux->next != NULL){
+	int a;
+	printf("\n\n%s>> ", nome);
+	while (aux != NULL){
+		for(a = 0; aux->nome[a]; a++){
+  				aux->nome[a] = tolower(aux->nome[a]);
+		}
+		for(a = 0; nome[a]; a++){
+  				nome[a] = tolower(nome[a]);
+		}
 		if (strcmp(aux->nome,nome)==0){
+			printf("%s // %s>> ", aux->nome, nome);
 			/* if foi definido antes.*/
 			return aux->valor;
 		}
@@ -103,6 +124,10 @@ void leAsm (char *nome){
 						c=fgetc(fp1);
 				}
 				c=fgetc(fp);
+				c=fgetc(fp);
+				printf("RESPOSTA - %d", resposta);
+				getchar();
+				c = '\0';
 				if (resposta == 0){ /*caso for 0, pula linha seguinte ao if*/
 					while (c!='\n'){
 						c=fgetc(fp);
@@ -136,11 +161,65 @@ void leAsm (char *nome){
 	getchar();
 	fclose(fp);
 	fclose(fp1);
+	libera(equl);
+}
+
+void lePre (char *nome){
+	char nomeExt[200], pri[50], sec[50], c;
+	int tam;
+	FILE *fp = fopen (nome, "r");
+	if(!fp){
+		printf("Erro ao abrir arquivo .asm");
+	}
+	tam = strlen (nome);
+	strcpy(nomeExt, nome);
+	nomeExt[tam-3]='\0';
+	strcat(nomeExt,"mcr");
+	
+
+	FILE *fp1 = fopen (nomeExt, "w+");
+
+	if(!fp1){
+		printf("Erro ao criar abrir arquivo .pre");
+	} 
+
+	if (!feof(fp)){
+		fscanf(fp, "%s", pri);
+		/* botar pra escrever APARTIR de section data*/
+		fscanf(fp, "%s", sec);
+		if (strcmp(sec, "TEXT")){
+		/* aqui começa section text. botar pra escrever tbm tudo dela*/
+			while (c!=EOF){
+				while (c!=EOF && c!= '\n'){
+					c= fgetc(fp);
+				}
+				fscanf(fp, "%s", pri);
+				if (strcmp(pri,"add")!=0 && strcmp(pri,"sub")!=0 && strcmp(pri,"mul")!=0 && strcmp(pri,"div")!=0 && strcmp(pri,"jmp")!=0 && strcmp(pri,"jmpn")!=0 && strcmp(pri,"jmpp")!=0 && strcmp(pri,"jmpz")!=0 && strcmp(pri,"copy")!=0 && strcmp(pri,"load")!=0 && strcmp(pri,"store")!=0 && strcmp(pri,"input")!=0 && strcmp(pri,"output")!=0 && strcmp(pri,"stop")!=0){
+			/*procurar a macro*/
+
+		}
+
+			}
+		}
+	
+
+	}
+	
+
+
+
+
+	fclose(fp);
+	fclose(fp1);
+
+
+
 }
 
 int main (){
 
 	leAsm("triangulo.asm");
 	printf("saiu!!");
+	lePre("triangulo.pre");
 return 0;
 }
