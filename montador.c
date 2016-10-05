@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 typedef struct listMcr {
-	char *orig, *eq;
+	char orig[50], eq[50];
 	struct listMcr *next;
 
 } listMcr;
@@ -16,55 +16,105 @@ listMcr *aux2 = aux1;
     {
        aux2 = aux1;
        aux1 = aux1->next;
+	printf("\n\nLIBERANDO : %s  - %s", aux2->orig, aux2->eq);
        free(aux2);
     }
 
 }
 
-listMcr *addMcr (listMcr *l, char *label1, char *label2){
-	listMcr *novo = NULL;
+listMcr *addMcr (listMcr *l, char label[50]){
+	if(l){
+		printf("\ninsert>>>: %s", l->eq);
+	}
+	listMcr *novo = (listMcr *)malloc(sizeof(listMcr)), *aux = l;
 
-	novo = malloc(sizeof(listMcr));
-	novo->orig =label1;
-	novo->eq =label2;
-	novo-> next = l;
-	return novo;
+	if(novo == NULL) exit(0);
+	strcpy(novo->orig,"");
+	strcpy(novo->eq,label);
+	    
+	if(aux == NULL){
+		novo->next = NULL;
+		 return novo; 
+	}
+	while(aux->next !=NULL){
+		aux=aux->next;
+	}
+	aux->next = novo;
+	return l;
+}
+
+listMcr *updateMcr (listMcr *l, char label[50]){
+	listMcr *aux = l;
+	if(aux==NULL){
+		return l;
+	}
+
+	while (aux->next != NULL && strcmp(aux->orig,"")!=0){
+		aux = aux->next;
+	}
+	strcpy(aux->orig,label);
+	
+	return l;
 
 }
+	
 
 
 typedef struct listAux {
 	int valor;
-	char *nome;
+	char nome[50];
 	struct listAux *next;
 
 } list;
 
-void libera (list *aux1){
+void libera (list* aux1){
 list *aux2 = aux1;
 
-   while (aux1 != NULL)
-    {
-       aux2 = aux1;
-       aux1 = aux1->next;
-       free(aux2);
-    }
+   do {
+       aux2 = aux1->next;
+	printf("aqui oh\n\nLIBERANDO : %s", aux1->nome);
+	getchar();
+       free(aux1);
+	aux1=aux2;
+    }while (aux1 != NULL);
 
 }
 
-list *add (list *l, int val, char *label){
-	list *novo = NULL;
-
-	novo = malloc(sizeof(list));
+list *add (list* l, int val, char label[50]){
+	printf("\n\nADD%s..", label);
+	if(l){
+		printf(">>%s..", l->nome);
+	}
+	list * novo =(list *) malloc( sizeof(list) ), *aux;
+	aux = l;
+	if(novo == NULL) exit(0);
 	novo->valor = val;
-	novo->nome =label;
-	novo-> next = l;
-	return novo;
+	strcpy(novo->nome,label);
+	    
+	if(aux == NULL){
+		novo->next = NULL;
+		 return novo; 
+	}
+	novo->next = aux;
+return novo;
 
 }
+
+void imprime (list *lis) {
+    list *aux=lis;
+        printf("\n");
+    if (aux) do {
+        printf("\n\nIMPRIMINDO %s", aux->nome);
+        aux = aux->next;
+    }while(aux!=NULL);
+
+}
+
+
 int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 	long int val;
-	int tam;
+	listMcr *parametros = NULL;
+	int tam, posM;
 	char aux[50], c;
 	if (strcmp(func,"add")!=0 && strcmp(func,"sub")!=0 && strcmp(func,"mult")!=0 && strcmp(func,"div")!=0 && strcmp(func,"jmp")!=0 && strcmp(func,"jmpn")!=0 && strcmp(func,"jmpp")!=0 && strcmp(func,"jmpz")!=0 && strcmp(func,"copy")!=0 && strcmp(func,"load")!=0 && strcmp(func,"store")!=0 && strcmp(func,"input")!=0 && strcmp(func,"output")!=0 && strcmp(func,"stop")!=0&& strcmp(func,"section")!=0&& strcmp(func,"data")!=0&& strcmp(func,"text")!=0){
 		FILE *fp = fopen (nome2, "r+"); /* .mcr*/
@@ -87,11 +137,13 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 			if(strcmp(aux,func)==0){
 				printf("ACHEI A MACRO CERTA!! %d", pos);
 				fscanf(fp1,"%s",aux); /* PARA CONFERIR QUE É UMA MACRO MESMO*/
+				posM = ftell(fp1);
 				while(c!='\n'){
 					c = fgetc(fp1);
 					if(c!='\n'){
 						fscanf(fp1,"%s",aux);
 						printf("PARAMETRO 2: %s ",aux);
+						parametros = addMcr (parametros, aux);
 					}
 				}
 				c = '\0';
@@ -101,6 +153,28 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 					if(c!='\n'){
 						fscanf(fp1,"%s",aux);
 						printf("PARAMETRO 1: %s ",aux);
+						parametros = updateMcr (parametros, aux);
+						getchar();
+					}
+				}
+				c = '\0';
+				fseek(fp1,posM,SEEK_SET);
+				while(c!='\n'){
+					c = fgetc(fp1);
+					printf("%c", c);
+					getchar();
+				}
+				
+				fseek(fp,pos-1,SEEK_SET);
+				while(c!=EOF && strcmp(aux,"macro")!=0){
+					c = fgetc(fp1);
+					if(c!='\n'){
+						fscanf(fp1,"%s",aux);
+						fprintf(fp,"%c%s",c,aux);
+						printf("%c%s",c,aux);
+						c = fgetc(fp1);
+						fprintf(fp,"%c",c);
+						fseek(fp1,-1,SEEK_CUR);
 						getchar();
 					}
 				}
@@ -115,10 +189,10 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 		val = ftell(fp);
 		printf("\n\nFTEEL %ld",val);
 		getchar();
-		fprintf(fp, "teste");
 		printf("\n\nFTEEL %ld",ftell(fp));
 		fclose(fp1);
 		fclose(fp);
+		liberaMcr (parametros);
 		return val;
 
 	}
@@ -255,6 +329,7 @@ void leAsm (char *nome){
 	getchar();
 	fclose(fp);
 	fclose(fp1);
+	imprime(equl);
 	libera(equl);
 }
 
@@ -262,7 +337,7 @@ void lePre (char *nome){
 	printf("\n\nAQUI COMEÇA MACROOOOOOOOO\n\n");
 	char nomeExt[200], pri[50], c, b;
 	int tam, cont=0, begin=0, result=0, text=0;
-	FILE *fp = fopen (nome, "r");
+	FILE *fp = fopen (nome, "r"); /*.pre*/
 	if(!fp){
 		printf("Erro ao abrir arquivo .pre");
 	}
@@ -272,7 +347,7 @@ void lePre (char *nome){
 	strcat(nomeExt,"mcr");
 	
 
-	FILE *fp1 = fopen (nomeExt, "w+");
+	FILE *fp1 = fopen (nomeExt, "w+"); /*.mcr*/
 
 	if(!fp1){
 		printf("Erro ao criar abrir arquivo .mcr");
@@ -282,7 +357,7 @@ void lePre (char *nome){
 		c='\0';
 		fscanf(fp, "%s", pri);
 		printf("%s", pri);
-		if ((strcmp(pri,"section")==0 || strcmp(pri,"data")==0)&&begin==0) {
+		if ((strcmp(pri,"section")==0 || strcmp(pri,"data")==0|| strcmp(pri,"text")==0)&&begin==0) {
 			if (strcmp(pri,"section")==0)
 				fprintf(fp1, "%s ", pri);
 			cont++;
@@ -302,7 +377,7 @@ void lePre (char *nome){
 			printf("\n\nresult: %d", result);
 			getchar();
 			if(result!=0){
-				fseek(fp1,result,SEEK_CUR);
+				fseek(fp1,result,SEEK_SET);
 			} 
 			fprintf(fp1, "%s", pri);
 			if (strcmp(pri,"section")==0 && begin ==1)

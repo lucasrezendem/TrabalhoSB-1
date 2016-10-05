@@ -4,7 +4,11 @@ section data
 	r:	space
 	dois:	const	2
 section text
-	swap testamacro, triangulo, b
+	copy  &a,  &t
+	copy  &b,  &a
+	copy  &t,  &b
+	end  macro
+swap testamacro, triangulo, b
 	input	b
 	input	h
 	load	b
