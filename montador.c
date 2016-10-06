@@ -23,6 +23,9 @@ listMcr *aux2 = aux1;
 }
 
 listMcr *addMcr (listMcr *l, char label[50]){
+	int size = strlen(label);
+	if(label[size-1]==',')
+		label[size-1]='\0';
 	if(l){
 		printf("\ninsert>>>: %s", l->eq);
 	}
@@ -45,6 +48,9 @@ listMcr *addMcr (listMcr *l, char label[50]){
 
 listMcr *updateMcr (listMcr *l, char label[50]){
 	listMcr *aux = l;
+	int size = strlen(label);
+	if(label[size-1]==',')
+		label[size-1]='\0';
 	if(aux==NULL){
 		return l;
 	}
@@ -109,12 +115,31 @@ void imprime (list *lis) {
     }while(aux!=NULL);
 
 }
-
+void troca (FILE *fp,int val, char c,char aux[50], listMcr *lis){
+	listMcr *laux = lis;
+	int teste=0;
+	int size = strlen(aux);
+	if(aux[size-1]==',')
+		aux[size-1]='\0';
+	fseek(fp,val,SEEK_SET);
+	while (laux!=NULL){
+		printf("\n\n>>>(%s/%s/%s)",aux,laux->eq,laux->orig);
+		if(strcmp(aux,laux->eq)==0){
+			fprintf(fp,"%c%s",c,laux->orig);
+			printf("\n\n>>0>>%c%s",c,laux->orig);
+			getchar();
+			teste=1;
+		}
+		laux = laux->next;
+	}
+	if (teste==0)
+		fprintf(fp,"%c%s",c,aux);
+}
 
 int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 	long int val;
 	listMcr *parametros = NULL;
-	int tam, posM;
+	int tam, posM/*, resultado*/;
 	char aux[50], c;
 	if (strcmp(func,"add")!=0 && strcmp(func,"sub")!=0 && strcmp(func,"mult")!=0 && strcmp(func,"div")!=0 && strcmp(func,"jmp")!=0 && strcmp(func,"jmpn")!=0 && strcmp(func,"jmpp")!=0 && strcmp(func,"jmpz")!=0 && strcmp(func,"copy")!=0 && strcmp(func,"load")!=0 && strcmp(func,"store")!=0 && strcmp(func,"input")!=0 && strcmp(func,"output")!=0 && strcmp(func,"stop")!=0&& strcmp(func,"section")!=0&& strcmp(func,"data")!=0&& strcmp(func,"text")!=0){
 		FILE *fp = fopen (nome2, "r+"); /* .mcr*/
@@ -136,7 +161,7 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 			getchar();
 			if(strcmp(aux,func)==0){
 				printf("ACHEI A MACRO CERTA!! %d", pos);
-				fscanf(fp1,"%s",aux); /* PARA CONFERIR QUE É UMA MACRO MESMO*/
+				fscanf(fp1,"%s",aux); /*caso precise, confere que é uma macro mesmo*/
 				posM = ftell(fp1);
 				while(c!='\n'){
 					c = fgetc(fp1);
@@ -170,7 +195,9 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 					c = fgetc(fp1);
 					if(c!='\n'){
 						fscanf(fp1,"%s",aux);
-						fprintf(fp,"%c%s",c,aux);
+						/*fprintf(fp,"%c%s",c,aux);*/
+						
+						troca (fp, ftell(fp),c,aux,parametros);
 						printf("%c%s",c,aux);
 						c = fgetc(fp1);
 						fprintf(fp,"%c",c);
@@ -178,14 +205,22 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 						getchar();
 					}
 				}
+				c='\0';
+				while(c!='\n'){ /*retira o end macro*/
+					fseek(fp,-2,SEEK_CUR);
+					c = fgetc(fp);
+				}
 				break;
 				getchar();
 			}
 			
 		}while (!feof(fp1) || strcmp (aux,"section")!=0);
+		c = '\0';
 
-
-
+		while(c!='\n'){ /*pula a linha que chamou a macro*/
+			c = fgetc(fp1);
+		}
+		
 		val = ftell(fp);
 		printf("\n\nFTEEL %ld",val);
 		getchar();
@@ -193,7 +228,7 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 		fclose(fp1);
 		fclose(fp);
 		liberaMcr (parametros);
-		return val;
+		return val/*+resultado*/;
 
 	}
 	else
@@ -375,9 +410,15 @@ void lePre (char *nome){
 				result = checaMacro(pri, nome, nomeExt, ftell(fp1),ftell(fp));
 			}
 			printf("\n\nresult: %d", result);
+			
 			getchar();
 			if(result!=0){
 				fseek(fp1,result,SEEK_SET);
+				strcpy(pri,"");
+				c='\0';
+				while(c!='\n'){
+					c = fgetc(fp);
+				}
 			} 
 			fprintf(fp1, "%s", pri);
 			if (strcmp(pri,"section")==0 && begin ==1)

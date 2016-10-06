@@ -1,10 +1,14 @@
-swap: macro &a, &b, &t
+swap2: macro &a, &b, &t
 	copy &a, &t
 	copy &b, &a
 	copy &t, &b
 	end macro
 
-
+swap: macro &a, &b, &t
+	copy &a, &t
+	copy &b, &a
+	copy &t, &b
+	end macro
 section data
 	b:	space
 	h:	space
