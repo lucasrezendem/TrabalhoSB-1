@@ -115,31 +115,40 @@ void imprime (list *lis) {
     }while(aux!=NULL);
 
 }
-void troca (FILE *fp,int val, char c,char aux[50], listMcr *lis){
+int troca (FILE *fp,int val, char c,char aux[50], listMcr *lis){
 	listMcr *laux = lis;
-	int teste=0;
+	int teste=0, virg=0;
 	int size = strlen(aux);
-	if(aux[size-1]==',')
+	if(aux[size-1]==','){
 		aux[size-1]='\0';
+		virg=1;
+	}
 	fseek(fp,val,SEEK_SET);
 	while (laux!=NULL){
 		printf("\n\n>>>(%s/%s/%s)",aux,laux->eq,laux->orig);
 		if(strcmp(aux,laux->eq)==0){
 			fprintf(fp,"%c%s",c,laux->orig);
-			printf("\n\n>>0>>%c%s",c,laux->orig);
+			if(virg==1)
+				fprintf(fp,",");
 			getchar();
 			teste=1;
 		}
 		laux = laux->next;
 	}
-	if (teste==0)
+	if (teste==0 && (strcmp(aux,"add")==0 || strcmp(aux,"sub")==0 || strcmp(aux,"mult")==0 || strcmp(aux,"div")==0 || strcmp(aux,"jmp")==0 || strcmp(aux,"jmpn")==0 || strcmp(aux,"jmpp")==0 || strcmp(aux,"jmpz")==0 || strcmp(aux,"copy")==0 || strcmp(aux,"load")==0 || strcmp(aux,"store")==0 || strcmp(aux,"input")==0 || strcmp(aux,"output")==0 || strcmp(aux,"stop")==0 || strcmp(aux,"section")==0 ||  strcmp(aux,"data")==0 || strcmp(aux,"text")==0|| strcmp(aux,"end")==0|| strcmp(aux,"macro")==0|| aux[0]=='&')){
 		fprintf(fp,"%c%s",c,aux);
+		teste=1;
+	}
+	if (teste==0 && strcmp(aux,"add")!=0 && strcmp(aux,"sub")!=0 && strcmp(aux,"mult")!=0 && strcmp(aux,"div")!=0 && strcmp(aux,"jmp")!=0 && strcmp(aux,"jmpn")!=0 && strcmp(aux,"jmpp")!=0 && strcmp(aux,"jmpz")!=0 && strcmp(aux,"copy")!=0 && strcmp(aux,"load")!=0 && strcmp(aux,"store")!=0 && strcmp(aux,"input")!=0 && strcmp(aux,"output")!=0 && strcmp(aux,"stop")!=0&& strcmp(aux,"section")!=0&& strcmp(aux,"data")!=0&& strcmp(aux,"text")!=0){
+			return 1;
+		}
+return 0;
 }
 
 int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 	long int val;
 	listMcr *parametros = NULL;
-	int tam, posM/*, resultado*/;
+	int tam, posM, resultado=0, resulaux=0;
 	char aux[50], c;
 	if (strcmp(func,"add")!=0 && strcmp(func,"sub")!=0 && strcmp(func,"mult")!=0 && strcmp(func,"div")!=0 && strcmp(func,"jmp")!=0 && strcmp(func,"jmpn")!=0 && strcmp(func,"jmpp")!=0 && strcmp(func,"jmpz")!=0 && strcmp(func,"copy")!=0 && strcmp(func,"load")!=0 && strcmp(func,"store")!=0 && strcmp(func,"input")!=0 && strcmp(func,"output")!=0 && strcmp(func,"stop")!=0&& strcmp(func,"section")!=0&& strcmp(func,"data")!=0&& strcmp(func,"text")!=0){
 		FILE *fp = fopen (nome2, "r+"); /* .mcr*/
@@ -197,12 +206,29 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 						fscanf(fp1,"%s",aux);
 						/*fprintf(fp,"%c%s",c,aux);*/
 						
-						troca (fp, ftell(fp),c,aux,parametros);
-						printf("%c%s",c,aux);
-						c = fgetc(fp1);
-						fprintf(fp,"%c",c);
+						if(strcmp(aux,"macro")==0)
+								break;
+						resultado = troca (fp, ftell(fp),c,aux,parametros);
+						if(resultado==1){
+							fseek(fp,1,SEEK_CUR);
+							resulaux = checaMacro(aux, nome, nome2, ftell(fp), ftell(fp1));
+							printf("\n\nSAIIIII BANZAI%d",resulaux);
+							resultado = 0;
+						}
+						if(resulaux!=0){
+							fseek(fp,resulaux,SEEK_SET);
+							strcpy(aux,"");
+							c='\0';
+							while(c!='\n'){
+								c = fgetc(fp1);
+							}
+							resulaux=0;
+						}
+						else{
+							c = fgetc(fp1);
+							fprintf(fp,"%c",c);
+						}
 						fseek(fp1,-1,SEEK_CUR);
-						getchar();
 					}
 				}
 				c='\0';
@@ -407,6 +433,8 @@ void lePre (char *nome){
 		if (begin==1){
 			c='\0';
 			if(text==1){
+				printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH\n\nPRIPRI %s", pri);
+				getchar();
 				result = checaMacro(pri, nome, nomeExt, ftell(fp1),ftell(fp));
 			}
 			printf("\n\nresult: %d", result);
