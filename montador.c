@@ -99,7 +99,67 @@ list *add (list* l, int val, char label[50]){ /*insere valor definido com equ*/
 return novo;
 
 }
+int checaIf (list *l, char *nome){
+	list *aux = l;
+	int a;
+	while (aux != NULL){
+		for(a = 0; aux->nome[a]; a++){
+  				aux->nome[a] = tolower(aux->nome[a]);
+		}
+		for(a = 0; nome[a]; a++){
+  				nome[a] = tolower(nome[a]);
+		}
+		
+		if (strcmp(aux->nome,nome)==0){/* if foi definido antes.*/
+			return aux->valor;
+		}
+		aux = aux->next;
+	}
 
+
+return -1; /* erro. if não foi definido antes*/
+}
+void tiraComentario (char *nome){
+	char c ='\0', nomeExt[200];
+	int i=1;
+
+	int tam;
+
+	FILE *fp = fopen (nome,"r+"); /*arquivo original*/
+	if(!fp){
+		printf("Erro ao abrir arquivo");
+	}
+
+	tam = strlen (nome);
+	strcpy(nomeExt, nome);
+	nomeExt[tam-4]='\0';
+	strcat(nomeExt,"2.asm");
+
+	FILE *fp1 = fopen (nomeExt,"w+"); /*arquivo com o numero das linhas*/
+	if(!fp1){
+		printf("Erro ao abrir arquivo");
+	}
+
+	while(c!=EOF || !feof(fp)){
+		c= fgetc(fp);
+		if (c==';'){
+			do{
+				c= fgetc(fp);
+			}while (c!=EOF && c!='\n');
+			
+		}
+		fprintf(fp1,"%c",c);
+	
+	}
+	fclose(fp);
+	fclose(fp1);
+
+	remove(nome); /*deleta arquivo original*/
+	rename(nomeExt,nome); /*e o substitui pelo novo*/
+
+
+
+}
 void colocaLinha (char *nome){ /*insere numero das linhas para detecção de erros*/
 	char c ='\0', nomeExt[200];
 	int i=1;
@@ -145,8 +205,107 @@ void colocaLinha (char *nome){ /*insere numero das linhas para detecção de err
 	remove(nome); /*deleta arquivo original*/
 	rename(nomeExt,nome); /*e o substitui pelo novo*/
 }
+void checaAntes (char *nome){
+	char nomMacro[50], macro[50], c='\0';
+	int tam, result, linha;
+	list *l = NULL;
+	FILE *fp = fopen (nome,"r+");
+	if(!fp)
+		printf("Erro ao abrir arquivo");
+	while (c!=EOF){
+		c=fgetc(fp);
+		if(c==':'){
+			while(c!='\n'){
+				fseek(fp,-2,SEEK_CUR);
+				c=fgetc(fp);
+			}
+			fscanf(fp,"%s",nomMacro);
+			
+			tam = strlen(nomMacro);
+			nomMacro[tam-1]='\0';
+			fscanf(fp,"%s",macro);
+			
+			if(strcmp(macro,"macro")==0){
+				l = add (l, ftell(fp), nomMacro);
+			}
+		}
+		
+	}
+	fseek(fp,0,SEEK_SET);
+	c='\0';
+	while (c!=EOF){
+		c=fgetc(fp);
+		if(c!=EOF){
+			fseek(fp,-1,SEEK_CUR);
+			fscanf(fp,"%s",macro);
+			result = checaIf (l, macro);
+			if(result!=-1){
+				printf("\n\n%s", macro);
+				printf(">>(%d, %ld)", result, ftell(fp));
+				if(result>ftell(fp)){
+					c='\0';
+					while(c!='\n'){
+						c=fgetc(fp);
+					}
+					c='\0';
+					while(c!='('){
+						fseek(fp,-2,SEEK_CUR);
+						c=fgetc(fp);
+					}
+					c='\0';
+					fscanf(fp,"%d", &linha);
+					printf("\nERRO >> erro semantico detectado na linha: %d (Você não pode chamar uma macro antes de definir a mesma)", linha);
+					
+				}
+				
+			}
+		}
+		
+	}
 
 
+	free(l);
+	fclose(fp);
+}
+void arrumaTopoFim (char *nome){
+	char c, b,nomeExt[50];
+	int pode=0, tam;
+	FILE *fp = fopen (nome,"r+");
+	if(!fp)
+		printf("erro ao abrir arquivo");
+	
+	tam = strlen (nome);
+	strcpy(nomeExt, nome);
+	nomeExt[tam-4]='\0';
+	strcat(nomeExt,"2.pre");
+
+	FILE *fp1 = fopen (nomeExt,"w+"); /*arquivo com o numero das linhas*/
+	if(!fp1){
+		printf("Erro ao abrir arquivo");
+	}
+
+	while(c!=EOF || !feof(fp)){
+		c=fgetc(fp);
+		if(c>58 && c<123)
+			pode = 1;
+		if(pode==1 && c!=EOF){ 
+			fprintf(fp1,"%c",c);
+			printf("%d",c);
+		}
+		
+		do{ /*pra ter certeza que vai encontrar o final do arquivo e também tirar alguns espaços, \t ou \n a mais*/
+			b = fgetc(fp);
+		}while(c==b);
+		if(b==EOF || c==EOF)
+			break;
+		fseek(fp,-1,SEEK_CUR);
+	}
+	fclose(fp);
+	fclose(fp1);
+
+	remove(nome); /*deleta arquivo original*/
+	rename(nomeExt,nome); /*e o substitui pelo novo*/
+}
 int troca (FILE *fp,int val, char c,char aux[50], listMcr *lis){
 	listMcr *laux = lis;
 	int teste=0, virg=0;
@@ -287,30 +446,10 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 
 
 }
-int checaIf (list *l, char *nome){
-	list *aux = l;
-	int a;
-	while (aux != NULL){
-		for(a = 0; aux->nome[a]; a++){
-  				aux->nome[a] = tolower(aux->nome[a]);
-		}
-		for(a = 0; nome[a]; a++){
-  				nome[a] = tolower(nome[a]);
-		}
-		
-		if (strcmp(aux->nome,nome)==0){/* if foi definido antes.*/
-			return aux->valor;
-		}
-		aux = aux->next;
-	}
-
-
-return -1; /* erro. if não foi definido antes*/
-}
 
 void leAsm (char *nome){ /*recebe .asm para gerar .pre*/
 	char palavra[50], b, c,nomeExt[200], label[50];
-	int a, tam, valor, resposta, i=0;
+	int a, tam, valor, resposta, linha, i=0;
 	list *equl = NULL;
 	FILE *fp = fopen (nome, "r"); /*.asm*/
 	if(!fp){
@@ -332,14 +471,12 @@ void leAsm (char *nome){ /*recebe .asm para gerar .pre*/
 	while (c!=EOF){
 		c= fgetc(fp);
 		i=0;
-		if (c==';'){
+		/*if (c==';'){
 			do{
 				c= fgetc(fp);
 			}while (c!=EOF && c!='\n');
-			/*c= fgetc(fp);*/
 		}
-
-
+		*/
 
 		if(c!='\n' && c!= ' ' && c!= '\t'&& c!=EOF){
 			fseek(fp, -1 ,SEEK_CUR);
@@ -350,14 +487,14 @@ void leAsm (char *nome){ /*recebe .asm para gerar .pre*/
 			
 			if (strcmp (palavra,"equ")==0){ /*checa se palavra encontrada é diretiva EQU*/
 				fseek(fp1, 0, SEEK_SET);
-				while (c!='\n' && i!=200){ /*volta para começo da linha*/
+				while (c!='\n' && i!=200000){ /*volta para começo da linha*/
 					fseek(fp, -2, SEEK_CUR);
 					fprintf(fp1," ");
 					c=fgetc(fp);
 					i++;
 				}
 				fseek(fp1, 0, SEEK_SET);
-				if(i==200){
+				if(i==200000){
 					i = 0;
 					fseek(fp,0,SEEK_SET);
 				}
@@ -368,7 +505,24 @@ void leAsm (char *nome){ /*recebe .asm para gerar .pre*/
 				fscanf(fp, "%s", label);
 				fscanf(fp, "%s", palavra); /*pega equ de novo*/
 				fscanf(fp, "%d", &valor); /* pega valor*/
-				/*printf("\nLABEL equ>%s valor macro %d", label, valor); */
+
+				if((label[0]>47 && label[0]<58)||(palavra[0]>47 && palavra[0]<58) || (strcmp(palavra,"equ")!=0)){
+					c='\0';
+					while(c!='\n'){
+						c=fgetc(fp);
+					}
+					c='\0';
+					while(c!='('){
+						fseek(fp,-2,SEEK_CUR);
+						c=fgetc(fp);
+					}
+					c='\0';
+					fscanf(fp,"%d", &linha);
+					printf("\nERRO >> erro sintático detectado na linha: %d (Erro na definição da diretiva EQU)", linha);
+					strcpy(label,"\0");
+					valor=0;
+
+				}
 				equl = add (equl, valor, label); /*adiciona em uma lista, os valores encontrados dos labels de equ*/
 				
 				c='\0';
@@ -386,8 +540,21 @@ void leAsm (char *nome){ /*recebe .asm para gerar .pre*/
 			}
 			if (strcmp (palavra,"if")==0){ /*checa se palavra encontrada é diretiva IF*/
 				fscanf(fp, "%s", palavra);
+				if((palavra[0]>47 && palavra[0]<58)||palavra[0]=='\n'||palavra[0]=='\t'||palavra[0]==' '||palavra[0]=='('){
+					c='\0';
+					while(c!='\n'){
+						c=fgetc(fp);
+					}
+					c='\0';
+					while(c!='('){
+						fseek(fp,-2,SEEK_CUR);
+						c=fgetc(fp);
+					}
+					c='\0';
+					fscanf(fp,"%d", &linha);
+					printf("\nERRO >> erro sintático detectado na linha: %d (Erro na definição da diretiva IF)", linha);
+				}
 				resposta = checaIf (equl, palavra);
-				/*printf("\n\nRESPOSTAAAA:%s, %d", palavra, resposta);*/
 				while (c!='\n'&& c!=EOF){
 						fseek(fp1, -2, SEEK_CUR);
 						c=fgetc(fp1);
@@ -398,7 +565,21 @@ void leAsm (char *nome){ /*recebe .asm para gerar .pre*/
 					while (c!='\n'){
 						c=fgetc(fp);
 					}
+				}
+				if(resposta == -1){
 
+					c='\0';
+					while(c!='\n'){
+						c=fgetc(fp);
+					}
+					c='\0';
+					while(c!='('){
+						fseek(fp,-2,SEEK_CUR);
+						c=fgetc(fp);
+					}
+					c='\0';
+					fscanf(fp,"%d", &linha);
+					printf("\nERRO >> erro semantico detectado na linha: %d (Você não definiu nenhum parâmetro com esse nome)", linha);
 				}
 			strcpy(palavra,"\0");
 			}
@@ -507,13 +688,15 @@ void lePre (char *nome){ /* le arquivo .pre e gera .mcr*/
 }
 
 int main (){
-
-	colocaLinha ("triangulo.asm");
-
-	leAsm("triangulo.asm");
-	/*printf("saiu!!");*/
-	/*getchar();*/
-	lePre("triangulo.pre");
-	/*printf("saiu!!");*/
+	/* ordem de funções que devem ser chamadas para -p*/
+	/*tiraComentario ("triangulo.asm");
+	colocaLinha ("triangulo.asm");*/
+	/*leAsm("triangulo.asm");*/
+	/*arrumaTopoFim ("triangulo.pre");*/
+	
+	/*ordem de funções que devem ser chamadas para -m*/
+	/*checaAntes ("triangulo.pre");
+	lePre("triangulo.pre");*/
+printf("\n");
 return 0;
 }
