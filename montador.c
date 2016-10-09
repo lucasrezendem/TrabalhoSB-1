@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-typedef struct listMcr {
+typedef struct listMcr { /*estrutura de dados para armazenar informações de nome das macros*/
 	char orig[50], eq[50];
 	struct listMcr *next;
 
@@ -16,7 +16,6 @@ listMcr *aux2 = aux1;
     {
        aux2 = aux1;
        aux1 = aux1->next;
-	printf("\n\nLIBERANDO : %s  - %s", aux2->orig, aux2->eq);
        free(aux2);
     }
 
@@ -26,9 +25,7 @@ listMcr *addMcr (listMcr *l, char label[50]){
 	int size = strlen(label);
 	if(label[size-1]==',')
 		label[size-1]='\0';
-	if(l){
-		printf("\ninsert>>>: %s", l->eq);
-	}
+
 	listMcr *novo = (listMcr *)malloc(sizeof(listMcr)), *aux = l;
 
 	if(novo == NULL) exit(0);
@@ -66,7 +63,7 @@ listMcr *updateMcr (listMcr *l, char label[50]){
 	
 
 
-typedef struct listAux {
+typedef struct listAux { /*estrutura que armazena parametros definidos com equ*/
 	int valor;
 	char nome[50];
 	struct listAux *next;
@@ -78,19 +75,16 @@ list *aux2 = aux1;
 
    do {
        aux2 = aux1->next;
-	printf("aqui oh\n\nLIBERANDO : %s", aux1->nome);
-	getchar();
        free(aux1);
 	aux1=aux2;
     }while (aux1 != NULL);
 
 }
 
-list *add (list* l, int val, char label[50]){
-	printf("\n\nADD%s..", label);
-	if(l){
-		printf(">>%s..", l->nome);
-	}
+list *add (list* l, int val, char label[50]){ /*insere valor definido com equ*/
+	int size = strlen(label);
+	if(label[size-1]==':')
+		label[size-1] = '\0';
 	list * novo =(list *) malloc( sizeof(list) ), *aux;
 	aux = l;
 	if(novo == NULL) exit(0);
@@ -106,15 +100,53 @@ return novo;
 
 }
 
-void imprime (list *lis) {
-    list *aux=lis;
-        printf("\n");
-    if (aux) do {
-        printf("\n\nIMPRIMINDO %s", aux->nome);
-        aux = aux->next;
-    }while(aux!=NULL);
+void colocaLinha (char *nome){ /*insere numero das linhas para detecção de erros*/
+	char c ='\0', nomeExt[200];
+	int i=1;
 
+	int tam;
+
+	FILE *fp = fopen (nome,"r+"); /*arquivo original*/
+	if(!fp){
+		printf("Erro ao abrir arquivo");
+	}
+
+	tam = strlen (nome);
+	strcpy(nomeExt, nome);
+	nomeExt[tam-4]='\0';
+	strcat(nomeExt,"2.asm");
+
+	FILE *fp1 = fopen (nomeExt,"w+"); /*arquivo com o numero das linhas*/
+	if(!fp1){
+		printf("Erro ao abrir arquivo");
+	}
+
+	while(c!=EOF || !feof(fp)){
+		while(c!='\n'){
+			c=fgetc(fp);
+			if(c==-1){
+				break;
+			} 
+			if(c!='\n')
+				fprintf(fp1,"%c",c);
+		}
+		if(c==-1)
+			break;
+		fprintf(fp1,"\t(%d",i);
+		fprintf(fp1,"\n");
+		i++;
+		if(c!=EOF) 
+			c='\0';
+
+	}
+	fclose(fp);
+	fclose(fp1);
+
+	remove(nome); /*deleta arquivo original*/
+	rename(nomeExt,nome); /*e o substitui pelo novo*/
 }
+
+
 int troca (FILE *fp,int val, char c,char aux[50], listMcr *lis){
 	listMcr *laux = lis;
 	int teste=0, virg=0;
@@ -125,12 +157,11 @@ int troca (FILE *fp,int val, char c,char aux[50], listMcr *lis){
 	}
 	fseek(fp,val,SEEK_SET);
 	while (laux!=NULL){
-		printf("\n\n>>>(%s/%s/%s)",aux,laux->eq,laux->orig);
+		/*printf("\n\n>>>(%s/%s/%s)",aux,laux->eq,laux->orig);*/
 		if(strcmp(aux,laux->eq)==0){
 			fprintf(fp,"%c%s",c,laux->orig);
 			if(virg==1)
 				fprintf(fp,",");
-			getchar();
 			teste=1;
 		}
 		laux = laux->next;
@@ -149,7 +180,7 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 	long int val;
 	listMcr *parametros = NULL;
 	int tam, posM, resultado=0, resulaux=0;
-	char aux[50], c;
+	char aux[50], c, b='\0';
 	if (strcmp(func,"add")!=0 && strcmp(func,"sub")!=0 && strcmp(func,"mult")!=0 && strcmp(func,"div")!=0 && strcmp(func,"jmp")!=0 && strcmp(func,"jmpn")!=0 && strcmp(func,"jmpp")!=0 && strcmp(func,"jmpz")!=0 && strcmp(func,"copy")!=0 && strcmp(func,"load")!=0 && strcmp(func,"store")!=0 && strcmp(func,"input")!=0 && strcmp(func,"output")!=0 && strcmp(func,"stop")!=0&& strcmp(func,"section")!=0&& strcmp(func,"data")!=0&& strcmp(func,"text")!=0){
 		FILE *fp = fopen (nome2, "r+"); /* .mcr*/
 		if (!fp){
@@ -162,21 +193,24 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 			printf("Erro ao abrir arquivo");
 		}
 		do{
+			c= fgetc(fp1);
+			b = fgetc(fp1);
+			if(c==EOF||c==b){
+				break;
+			}
+			else{	
+				fseek(fp1,-2,SEEK_CUR);
+			}
 			fscanf(fp1,"%s",aux);
-			printf(">>%s", aux);
 			tam = strlen(aux);
 			aux[tam-1]='\0';
-			printf(">>%s", aux);
-			getchar();
 			if(strcmp(aux,func)==0){
-				printf("ACHEI A MACRO CERTA!! %d", pos);
-				fscanf(fp1,"%s",aux); /*caso precise, confere que é uma macro mesmo*/
+				fscanf(fp1,"%s",aux); /*caso precise, pode usar para conferir que é uma macro mesmo, pq se for aux==macro*/
 				posM = ftell(fp1);
 				while(c!='\n'){
 					c = fgetc(fp1);
 					if(c!='\n'){
 						fscanf(fp1,"%s",aux);
-						printf("PARAMETRO 2: %s ",aux);
 						parametros = addMcr (parametros, aux);
 					}
 				}
@@ -186,17 +220,13 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 					c = fgetc(fp1);
 					if(c!='\n'){
 						fscanf(fp1,"%s",aux);
-						printf("PARAMETRO 1: %s ",aux);
 						parametros = updateMcr (parametros, aux);
-						getchar();
 					}
 				}
 				c = '\0';
 				fseek(fp1,posM,SEEK_SET);
 				while(c!='\n'){
 					c = fgetc(fp1);
-					printf("%c", c);
-					getchar();
 				}
 				
 				fseek(fp,pos-1,SEEK_SET);
@@ -212,7 +242,6 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 						if(resultado==1){
 							fseek(fp,1,SEEK_CUR);
 							resulaux = checaMacro(aux, nome, nome2, ftell(fp), ftell(fp1));
-							printf("\n\nSAIIIII BANZAI%d",resulaux);
 							resultado = 0;
 						}
 						if(resulaux!=0){
@@ -237,20 +266,16 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 					c = fgetc(fp);
 				}
 				break;
-				getchar();
 			}
-			
 		}while (!feof(fp1) || strcmp (aux,"section")!=0);
 		c = '\0';
-
-		while(c!='\n'){ /*pula a linha que chamou a macro*/
+		while(c!='\n'||c!=EOF){ /*pula a linha que chamou a macro*/
 			c = fgetc(fp1);
 		}
-		
 		val = ftell(fp);
-		printf("\n\nFTEEL %ld",val);
-		getchar();
-		printf("\n\nFTEEL %ld",ftell(fp));
+		/*printf("\n\nFTEEL %ld",val);*/
+		/*getchar();*/
+		/*printf("\n\nFTEEL %ld",ftell(fp));*/
 		fclose(fp1);
 		fclose(fp);
 		liberaMcr (parametros);
@@ -265,7 +290,6 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 int checaIf (list *l, char *nome){
 	list *aux = l;
 	int a;
-	printf("\n\n%s>> ", nome);
 	while (aux != NULL){
 		for(a = 0; aux->nome[a]; a++){
   				aux->nome[a] = tolower(aux->nome[a]);
@@ -273,9 +297,8 @@ int checaIf (list *l, char *nome){
 		for(a = 0; nome[a]; a++){
   				nome[a] = tolower(nome[a]);
 		}
-		if (strcmp(aux->nome,nome)==0){
-			printf("%s // %s>> ", aux->nome, nome);
-			/* if foi definido antes.*/
+		
+		if (strcmp(aux->nome,nome)==0){/* if foi definido antes.*/
 			return aux->valor;
 		}
 		aux = aux->next;
@@ -285,11 +308,11 @@ int checaIf (list *l, char *nome){
 return -1; /* erro. if não foi definido antes*/
 }
 
-void leAsm (char *nome){
+void leAsm (char *nome){ /*recebe .asm para gerar .pre*/
 	char palavra[50], b, c,nomeExt[200], label[50];
-	int a, tam, valor, resposta;
+	int a, tam, valor, resposta, i=0;
 	list *equl = NULL;
-	FILE *fp = fopen (nome, "r");
+	FILE *fp = fopen (nome, "r"); /*.asm*/
 	if(!fp){
 		printf("Erro ao abrir arquivo .asm");
 	}
@@ -299,7 +322,7 @@ void leAsm (char *nome){
 	strcat(nomeExt,"pre");
 	
 
-	FILE *fp1 = fopen (nomeExt, "w+");
+	FILE *fp1 = fopen (nomeExt, "w+"); /*.pre*/
 
 	if(!fp1){
 		printf("Erro ao criar abrir arquivo .pre");
@@ -308,11 +331,12 @@ void leAsm (char *nome){
 
 	while (c!=EOF){
 		c= fgetc(fp);
+		i=0;
 		if (c==';'){
 			do{
 				c= fgetc(fp);
-			}while (c!=EOF && c!=';');
-			c= fgetc(fp);
+			}while (c!=EOF && c!='\n');
+			/*c= fgetc(fp);*/
 		}
 
 
@@ -323,36 +347,52 @@ void leAsm (char *nome){
 			for(a = 0; palavra[a]; a++){
   				palavra[a] = tolower(palavra[a]);
 			}
-
+			
 			if (strcmp (palavra,"equ")==0){ /*checa se palavra encontrada é diretiva EQU*/
-				while (c!='\n'){ /*volta para começo da linha*/
+				fseek(fp1, 0, SEEK_SET);
+				while (c!='\n' && i!=200){ /*volta para começo da linha*/
 					fseek(fp, -2, SEEK_CUR);
-					fseek(fp1, -1, SEEK_CUR);
+					fprintf(fp1," ");
 					c=fgetc(fp);
+					i++;
 				}
-				fseek(fp1, 3, SEEK_CUR);
+				fseek(fp1, 0, SEEK_SET);
+				if(i==200){
+					i = 0;
+					fseek(fp,0,SEEK_SET);
+				}
+				else {
+					fseek(fp1, 2, SEEK_CUR);
+				}
+				/*printf("\n>>>>>%c(%ld)",c,ftell(fp));*/
 				fscanf(fp, "%s", label);
-				printf("%s", label); /* pega nome label*/
 				fscanf(fp, "%s", palavra); /*pega equ de novo*/
 				fscanf(fp, "%d", &valor); /* pega valor*/
+				/*printf("\nLABEL equ>%s valor macro %d", label, valor); */
 				equl = add (equl, valor, label); /*adiciona em uma lista, os valores encontrados dos labels de equ*/
-				getchar();
+				
 				c='\0';
-				while (c!='\n'&& c!=EOF){ /* pulando linha do equ*/
+				while (c!='\n' && c!=EOF){ /* pulando linha do equ*/
 					c=fgetc(fp);
+					/*printf("\n\npulando linha do equ  %c (%ld)",c,ftell(fp));*/
+					
+					/*c=fgetc(fp);*/
 				}
 				strcpy(palavra,"\0");
+				strcpy(label,"\0");
+				c='\0';
+				fseek(fp,-1,SEEK_CUR);
 
 			}
 			if (strcmp (palavra,"if")==0){ /*checa se palavra encontrada é diretiva IF*/
 				fscanf(fp, "%s", palavra);
 				resposta = checaIf (equl, palavra);
+				/*printf("\n\nRESPOSTAAAA:%s, %d", palavra, resposta);*/
 				while (c!='\n'&& c!=EOF){
 						fseek(fp1, -2, SEEK_CUR);
 						c=fgetc(fp1);
 				}
 				c=fgetc(fp);
-				getchar();
 				c = '\0';
 				if (resposta == 0){ /*caso for 0, pula linha seguinte ao if*/
 					while (c!='\n'){
@@ -365,12 +405,11 @@ void leAsm (char *nome){
 			for(a = 0; palavra[a]; a++){
   				palavra[a] = tolower(palavra[a]);
 			}
-			printf("\n %s", palavra);
 			fprintf(fp1, "%s", palavra);
 			c= fgetc(fp);
 			fprintf(fp1, "%c", tolower(c));
 			if (c=='\n' || c== '\t' || c == ' '){
-				do{
+				do{ /*pra ter certeza que vai encontrar o final do arquivo*/
 					b = fgetc(fp);
 				}while(c==b && b!=EOF);
 				fseek(fp, -1 ,SEEK_CUR);
@@ -378,7 +417,7 @@ void leAsm (char *nome){
 			} 
 		}
 		else{
-			do{
+			do{ /*pra ter certeza que vai encontrar o final do arquivo e também tirar alguns espaços, \t ou \n a mais*/
 				b = fgetc(fp);
 			}while(c==b);
 			if(b==EOF || c==EOF)
@@ -387,17 +426,14 @@ void leAsm (char *nome){
 			fprintf(fp1, "%c", tolower(c));
 		}
 	}
-	getchar();
 	fclose(fp);
 	fclose(fp1);
-	imprime(equl);
 	libera(equl);
 }
 
-void lePre (char *nome){
-	printf("\n\nAQUI COMEÇA MACROOOOOOOOO\n\n");
+void lePre (char *nome){ /* le arquivo .pre e gera .mcr*/
 	char nomeExt[200], pri[50], c, b;
-	int tam, cont=0, begin=0, result=0, text=0;
+	int tam,begin=0, result=0, text=0;
 	FILE *fp = fopen (nome, "r"); /*.pre*/
 	if(!fp){
 		printf("Erro ao abrir arquivo .pre");
@@ -417,29 +453,19 @@ void lePre (char *nome){
 	while (!feof(fp) || c!=EOF){
 		c='\0';
 		fscanf(fp, "%s", pri);
-		printf("%s", pri);
-		if ((strcmp(pri,"section")==0 || strcmp(pri,"data")==0|| strcmp(pri,"text")==0)&&begin==0) {
-			if (strcmp(pri,"section")==0)
-				fprintf(fp1, "%s ", pri);
-			cont++;
+		
+		if ((strcmp(pri,"section")==0)&&begin==0) {
+			begin=1;
 		}
-		else{
-			cont=0;
-		}
-		if(cont==2){
-			begin = 1;
-			
-		}
+		
+		
 		if (begin==1){
 			c='\0';
 			if(text==1){
-				printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH\n\nPRIPRI %s", pri);
-				getchar();
 				result = checaMacro(pri, nome, nomeExt, ftell(fp1),ftell(fp));
 			}
-			printf("\n\nresult: %d", result);
+			/*printf("\n\nresult: %d", result);*/
 			
-			getchar();
 			if(result!=0){
 				fseek(fp1,result,SEEK_SET);
 				strcpy(pri,"");
@@ -450,11 +476,10 @@ void lePre (char *nome){
 			} 
 			fprintf(fp1, "%s", pri);
 			if (strcmp(pri,"section")==0 && begin ==1)
-				text=1;
+				text=0;
 			while (c!='\n'&& c!=EOF){
 				c=fgetc(fp);
 				fprintf(fp1,"%c",c);
-				printf("%c",c);
 			}
 			c=fgetc(fp);
 			if(c==EOF)
@@ -475,8 +500,6 @@ void lePre (char *nome){
 
 
 	}
-	
-	printf("\n\nCHEGA ATE FINAL YEY");
 	fclose(fp);
 	fclose(fp1);
 
@@ -485,9 +508,12 @@ void lePre (char *nome){
 
 int main (){
 
+	colocaLinha ("triangulo.asm");
+
 	leAsm("triangulo.asm");
-	printf("saiu!!");
+	/*printf("saiu!!");*/
+	/*getchar();*/
 	lePre("triangulo.pre");
-	printf("saiu!!");
+	/*printf("saiu!!");*/
 return 0;
 }
