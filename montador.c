@@ -121,7 +121,6 @@ return -1; /* erro. if não foi definido antes*/
 }
 void tiraComentario (char *nome){
 	char c ='\0', nomeExt[200];
-	int i=1;
 
 	int tam;
 
@@ -206,6 +205,11 @@ void colocaLinha (char *nome){ /*insere numero das linhas para detecção de err
 	rename(nomeExt,nome); /*e o substitui pelo novo*/
 }
 void checaAntes (char *nome){
+	printf("CHECANDO ANTES!");
+	
+	printf("CHECANDO ANTES!");
+	
+	printf("CHECANDO ANTES!");
 	char nomMacro[50], macro[50], c='\0';
 	int tam, result, linha;
 	list *l = NULL;
@@ -220,6 +224,7 @@ void checaAntes (char *nome){
 				c=fgetc(fp);
 			}
 			fscanf(fp,"%s",nomMacro);
+			printf("%s",nomMacro);
 			
 			tam = strlen(nomMacro);
 			nomMacro[tam-1]='\0';
@@ -240,8 +245,8 @@ void checaAntes (char *nome){
 			fscanf(fp,"%s",macro);
 			result = checaIf (l, macro);
 			if(result!=-1){
-				printf("\n\n%s", macro);
-				printf(">>(%d, %ld)", result, ftell(fp));
+				/*printf("\n\n%s", macro);
+				printf(">>(%d, %ld)", result, ftell(fp));*/
 				if(result>ftell(fp)){
 					c='\0';
 					while(c!='\n'){
@@ -290,7 +295,6 @@ void arrumaTopoFim (char *nome){
 			pode = 1;
 		if(pode==1 && c!=EOF){ 
 			fprintf(fp1,"%c",c);
-			printf("%d",c);
 		}
 		
 		do{ /*pra ter certeza que vai encontrar o final do arquivo e também tirar alguns espaços, \t ou \n a mais*/
@@ -506,6 +510,13 @@ void leAsm (char *nome){ /*recebe .asm para gerar .pre*/
 				fscanf(fp, "%s", palavra); /*pega equ de novo*/
 				fscanf(fp, "%d", &valor); /* pega valor*/
 
+				
+				for(a = 0; palavra[a]; a++){
+  					palavra[a] = tolower(palavra[a]);
+				}
+				for(a = 0; palavra[a]; a++){
+  					label[a] = tolower(label[a]);
+				}
 				if((label[0]>47 && label[0]<58)||(palavra[0]>47 && palavra[0]<58) || (strcmp(palavra,"equ")!=0)){
 					c='\0';
 					while(c!='\n'){
@@ -689,14 +700,25 @@ void lePre (char *nome){ /* le arquivo .pre e gera .mcr*/
 
 int main (){
 	/* ordem de funções que devem ser chamadas para -p*/
-	/*tiraComentario ("triangulo.asm");
-	colocaLinha ("triangulo.asm");*/
-	/*leAsm("triangulo.asm");*/
-	/*arrumaTopoFim ("triangulo.pre");*/
-	
+	tiraComentario ("triangulo.asm");
+	printf("tiraComentario");
+	getchar();
+	colocaLinha ("triangulo.asm");
+	printf("colocaLinha");
+	getchar();
+	leAsm("triangulo.asm");
+	printf("leAsm");
+	getchar();
+	arrumaTopoFim ("triangulo.pre");
+	printf("arrumaTopoFim");
+	getchar();
 	/*ordem de funções que devem ser chamadas para -m*/
-	/*checaAntes ("triangulo.pre");
-	lePre("triangulo.pre");*/
+	/*checaAntes ("triangulo.pre");*/
+	printf("checaAntes");
+	getchar();
+	lePre("triangulo.pre");
+	printf("lePre");
+	getchar();
 printf("\n");
 return 0;
 }
