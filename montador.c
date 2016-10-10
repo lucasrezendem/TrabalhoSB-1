@@ -205,13 +205,8 @@ void colocaLinha (char *nome){ /*insere numero das linhas para detecção de err
 	rename(nomeExt,nome); /*e o substitui pelo novo*/
 }
 void checaAntes (char *nome){
-	printf("CHECANDO ANTES!");
-	
-	printf("CHECANDO ANTES!");
-	
-	printf("CHECANDO ANTES!");
-	char nomMacro[50], macro[50], c='\0';
-	int tam, result, linha;
+	char nomMacro[200], macro[50], c='\0',b='\0';
+	int tam, result, linha, i=0;
 	list *l = NULL;
 	FILE *fp = fopen (nome,"r+");
 	if(!fp)
@@ -219,12 +214,12 @@ void checaAntes (char *nome){
 	while (c!=EOF){
 		c=fgetc(fp);
 		if(c==':'){
-			while(c!='\n'){
+			i=0;
+			while(c!='\n' && c!=EOF && ftell(fp)>1){
 				fseek(fp,-2,SEEK_CUR);
 				c=fgetc(fp);
 			}
 			fscanf(fp,"%s",nomMacro);
-			printf("%s",nomMacro);
 			
 			tam = strlen(nomMacro);
 			nomMacro[tam-1]='\0';
@@ -238,7 +233,7 @@ void checaAntes (char *nome){
 	}
 	fseek(fp,0,SEEK_SET);
 	c='\0';
-	while (c!=EOF){
+	 while (c!=EOF){
 		c=fgetc(fp);
 		if(c!=EOF){
 			fseek(fp,-1,SEEK_CUR);
@@ -267,10 +262,9 @@ void checaAntes (char *nome){
 		}
 		
 	}
-
+	fclose(fp);
 
 	free(l);
-	fclose(fp);
 }
 void arrumaTopoFim (char *nome){
 	char c, b,nomeExt[50];
@@ -453,7 +447,7 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 
 void leAsm (char *nome){ /*recebe .asm para gerar .pre*/
 	char palavra[50], b, c,nomeExt[200], label[50];
-	int a, tam, valor, resposta, linha, i=0;
+	int a, tam, valor, resposta, linha;
 	list *equl = NULL;
 	FILE *fp = fopen (nome, "r"); /*.asm*/
 	if(!fp){
@@ -474,7 +468,6 @@ void leAsm (char *nome){ /*recebe .asm para gerar .pre*/
 
 	while (c!=EOF){
 		c= fgetc(fp);
-		i=0;
 		/*if (c==';'){
 			do{
 				c= fgetc(fp);
@@ -491,15 +484,13 @@ void leAsm (char *nome){ /*recebe .asm para gerar .pre*/
 			
 			if (strcmp (palavra,"equ")==0){ /*checa se palavra encontrada é diretiva EQU*/
 				fseek(fp1, 0, SEEK_SET);
-				while (c!='\n' && i!=200000){ /*volta para começo da linha*/
+				while (c!='\n' && ftell(fp)>1){ /*volta para começo da linha*/
 					fseek(fp, -2, SEEK_CUR);
 					fprintf(fp1," ");
 					c=fgetc(fp);
-					i++;
 				}
 				fseek(fp1, 0, SEEK_SET);
-				if(i==200000){
-					i = 0;
+				if(ftell(fp)==1){
 					fseek(fp,0,SEEK_SET);
 				}
 				else {
@@ -551,6 +542,9 @@ void leAsm (char *nome){ /*recebe .asm para gerar .pre*/
 			}
 			if (strcmp (palavra,"if")==0){ /*checa se palavra encontrada é diretiva IF*/
 				fscanf(fp, "%s", palavra);
+				for(a = 0; palavra[a]; a++){
+  					palavra[a] = tolower(palavra[a]);
+				}
 				if((palavra[0]>47 && palavra[0]<58)||palavra[0]=='\n'||palavra[0]=='\t'||palavra[0]==' '||palavra[0]=='('){
 					c='\0';
 					while(c!='\n'){
@@ -565,6 +559,7 @@ void leAsm (char *nome){ /*recebe .asm para gerar .pre*/
 					fscanf(fp,"%d", &linha);
 					printf("\nERRO >> erro sintático detectado na linha: %d (Erro na definição da diretiva IF)", linha);
 				}
+			
 				resposta = checaIf (equl, palavra);
 				while (c!='\n'&& c!=EOF){
 						fseek(fp1, -2, SEEK_CUR);
@@ -713,7 +708,7 @@ int main (){
 	printf("arrumaTopoFim");
 	getchar();
 	/*ordem de funções que devem ser chamadas para -m*/
-	/*checaAntes ("triangulo.pre");*/
+	checaAntes ("triangulo.pre");
 	printf("checaAntes");
 	getchar();
 	lePre("triangulo.pre");
