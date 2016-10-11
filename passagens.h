@@ -3,10 +3,12 @@ typedef struct simbolo {
   int label;
 } Simbolo;
 
-typedef struct listSimbolo {
+typedef struct listSimbolo ListSimbolo;
+
+struct listSimbolo {
   Simbolo simbolo;
-  Simbolo* prox;
-} ListSimbolo;
+  ListSimbolo *prox;
+};
 
 typedef struct instrucao {
   char nome[7];
@@ -19,3 +21,13 @@ typedef struct diretiva {
   int operandos;
   int espaco;
 } Diretiva;
+
+/*Operacoes sobre a tabela de símbolos*/
+void adicionaSimbolo(Simbolo sim, ListSimbolo *ls);
+ListSimbolo *procuraSimbolo(const char *NomeSim, ListSimbolo *ls);
+void removeSimbolo(Simbolo sim, ListSimbolo *ls);
+void esvaziaTabela(ListSimbolo *ls);
+
+/*Operacoes sobre as tabelas de instrucoes e diretivas*/
+int procuraInstrucao(const char *nome, int operandos);
+int procuraDiretiva(const char *nome, int operandos);
