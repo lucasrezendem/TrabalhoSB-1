@@ -205,8 +205,8 @@ void colocaLinha (char *nome){ /*insere numero das linhas para detecção de err
 	rename(nomeExt,nome); /*e o substitui pelo novo*/
 }
 void checaAntes (char *nome){
-	char nomMacro[200], macro[50], c='\0',b='\0';
-	int tam, result, linha, i=0;
+	char nomMacro[200], macro[50], c='\0'/*,b='\0'*/;
+	int tam, result, linha;
 	list *l = NULL;
 	FILE *fp = fopen (nome,"r+");
 	if(!fp)
@@ -214,7 +214,6 @@ void checaAntes (char *nome){
 	while (c!=EOF){
 		c=fgetc(fp);
 		if(c==':'){
-			i=0;
 			while(c!='\n' && c!=EOF && ftell(fp)>1){
 				fseek(fp,-2,SEEK_CUR);
 				c=fgetc(fp);
@@ -267,7 +266,7 @@ void checaAntes (char *nome){
 	free(l);
 }
 void arrumaTopoFim (char *nome){
-	char c, b,nomeExt[50];
+	char c,/* b,*/nomeExt[50];
 	int pode=0, tam;
 	FILE *fp = fopen (nome,"r+");
 	if(!fp)
@@ -290,6 +289,7 @@ void arrumaTopoFim (char *nome){
 		if(pode==1 && c!=EOF){ 
 			fprintf(fp1,"%c",c);
 		}
+
 	}
 	fclose(fp);
 	fclose(fp1);
@@ -438,18 +438,18 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 
 }
 
-void leAsm (char *nome){ /*recebe .asm para gerar .pre*/
-	char palavra[50], b, c,nomeExt[200], label[50];
-	int a, tam, valor, resposta, linha;
+void leAsm (char *nome,char *nomeExt){ /*recebe .asm para gerar .pre*/
+	char palavra[50], b, c/*,nomeExt[200]*/, label[50];
+	int a/*, tam,*/ ,valor, resposta, linha;
 	list *equl = NULL;
 	FILE *fp = fopen (nome, "r"); /*.asm*/
 	if(!fp){
 		printf("Erro ao abrir arquivo .asm");
 	}
-	tam = strlen (nome);
+	/*tam = strlen (nome);
 	strcpy(nomeExt, nome);
 	nomeExt[tam-3]='\0';
-	strcat(nomeExt,"pre");
+	strcat(nomeExt,"pre");*/
 	
 
 	FILE *fp1 = fopen (nomeExt, "w+"); /*.pre*/
@@ -611,17 +611,17 @@ void leAsm (char *nome){ /*recebe .asm para gerar .pre*/
 	libera(equl);
 }
 
-void lePre (char *nome){ /* le arquivo .pre e gera .mcr*/
-	char nomeExt[200], pri[50], c, b;
-	int tam,begin=0, result=0, text=0;
+void lePre (char *nome,char *nomeExt){ /* le arquivo .pre e gera .mcr*/
+	char /*nomeExt[200], */pri[50], c, b;
+	int /*tam,*/begin=0, result=0, text=0;
 	FILE *fp = fopen (nome, "r"); /*.pre*/
 	if(!fp){
 		printf("Erro ao abrir arquivo .pre");
 	}
-	tam = strlen (nome);
+	/*tam = strlen (nome);
 	strcpy(nomeExt, nome);
 	nomeExt[tam-3]='\0';
-	strcat(nomeExt,"mcr");
+	strcat(nomeExt,"mcr");*/
 	
 
 	FILE *fp1 = fopen (nomeExt, "w+"); /*.mcr*/
@@ -694,7 +694,7 @@ int main (){
 	colocaLinha ("triangulo.asm");
 	printf("colocaLinha");
 	getchar();
-	leAsm("triangulo.asm");
+	leAsm("triangulo.asm","triangulo.pre");
 	printf("leAsm");
 	getchar();
 	arrumaTopoFim ("triangulo.pre");
@@ -704,7 +704,7 @@ int main (){
 	checaAntes ("triangulo.pre");
 	printf("checaAntes");
 	getchar();
-	lePre("triangulo.pre");
+	lePre("triangulo.pre","triangulo.mcr");
 	printf("lePre");
 	getchar();
 printf("\n");
