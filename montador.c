@@ -290,13 +290,6 @@ void arrumaTopoFim (char *nome){
 		if(pode==1 && c!=EOF){ 
 			fprintf(fp1,"%c",c);
 		}
-		
-		do{ /*pra ter certeza que vai encontrar o final do arquivo e também tirar alguns espaços, \t ou \n a mais*/
-			b = fgetc(fp);
-		}while(c==b);
-		if(b==EOF || c==EOF)
-			break;
-		fseek(fp,-1,SEEK_CUR);
 	}
 	fclose(fp);
 	fclose(fp1);
