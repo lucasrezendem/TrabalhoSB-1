@@ -1,6 +1,11 @@
+#ifndef PASSAGENS_H
+#define PASSAGENS_H
+
 typedef struct simbolo {
   char nome[50];
   int label;
+  int posicao;
+  int valor;
 } Simbolo;
 
 typedef struct listSimbolo ListSimbolo;
@@ -23,11 +28,15 @@ typedef struct diretiva {
 } Diretiva;
 
 /*Operacoes sobre a tabela de símbolos*/
-void adicionaSimbolo(Simbolo sim, ListSimbolo *ls);
-ListSimbolo *procuraSimbolo(const char *NomeSim, ListSimbolo *ls);
-void removeSimbolo(Simbolo sim, ListSimbolo *ls);
-void esvaziaTabela(ListSimbolo *ls);
+void adicionaSimbolo(Simbolo sim);
+ListSimbolo *procuraSimbolo(const char *NomeSim);
+void removeSimbolo(Simbolo sim);
+void esvaziaTabela();
 
 /*Operacoes sobre as tabelas de instrucoes e diretivas*/
 int procuraInstrucao(const char *nome, int operandos);
 int procuraDiretiva(const char *nome, int operandos);
+
+void separa_tokens(FILE *fp, int passagem);
+
+#endif
