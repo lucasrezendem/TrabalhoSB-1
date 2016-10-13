@@ -32,6 +32,7 @@ void adicionaSimbolo(Simbolo sim);
 ListSimbolo *procuraSimbolo(const char *NomeSim);
 void removeSimbolo(Simbolo sim);
 void esvaziaTabela();
+void imprimeSimbolos();
 
 /*Operacoes sobre as tabelas de instrucoes e diretivas*/
 int procuraInstrucao(const char *nome, int operandos);

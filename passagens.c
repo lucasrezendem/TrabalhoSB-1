@@ -48,8 +48,8 @@ void adicionaSimbolo(Simbolo sim) {
   } else {
     while (aux->prox != NULL) aux = aux->prox;
     aux->prox = malloc(sizeof(ListSimbolo));
-    aux->simbolo = sim;
-    aux->prox = NULL;
+    aux->prox->simbolo = sim;
+    aux->prox->prox = NULL;
   }
 }
 
@@ -81,10 +81,12 @@ void esvaziaTabela() {
 
 void imprimeSimbolos() {
   ListSimbolo *aux = ls;
+  if (ls == NULL) printf("Lista Vazia.\n");
   while (aux != NULL) {
     printf("%s: %d -> ", aux->simbolo.nome, aux->simbolo.posicao);
-    if (aux->simbolo.label == 1) printf("label\n");
-    else printf("variavel\n");
+    if (aux->simbolo.label == 1) printf("label -> ");
+    else printf("variavel -> ");
+    printf("valor: %d\n", aux->simbolo.valor);
     aux = aux->prox;
   }
 }
@@ -123,7 +125,8 @@ void separa_tokens(FILE *fp, int passagem){ /*ASSIM QUE POSSIVEL, RETIRE TODOS O
 	int i;
 	char linha[160], *aux, rotulo[50]; /*cada linha tem NO MAXIMO cerca de 160 caracteres*/
   char tokens[5][50];
-  int simPos, params = 0, instPos, instrucao, diretiva, espaco, valor = 0;
+  int simPos, params = 0, instPos = 0, instrucao, diretiva, espaco, valor = 0, expParams = 0;
+  Simbolo simb;
 
 	fscanf(fp, "%[^\n]", linha); /*pega a linha a qual o fp estava apontando*/
 	if(feof(fp)) {
@@ -150,8 +153,9 @@ void separa_tokens(FILE *fp, int passagem){ /*ASSIM QUE POSSIVEL, RETIRE TODOS O
 
   instPos = 0;
   if (strchr(tokens[0], ':') != NULL) instPos = 1;
+  expParams = i - instPos; /*subtrair 1 quando botar o esquema da linha*/
   if (secText == 1 && strcasecmp(tokens[0], "SECTION") != 0) {
-    instrucao = procuraInstrucao(tokens[instPos], i - instPos);
+    instrucao = procuraInstrucao(tokens[instPos], expParams);
     if (instrucao < 0 ){
       if (passagem == 2){/*verifica erros se for a segunda passagem*/
         switch (instrucao) {
@@ -174,7 +178,7 @@ void separa_tokens(FILE *fp, int passagem){ /*ASSIM QUE POSSIVEL, RETIRE TODOS O
       espaco = params + 1;
     }
   } else {
-    diretiva = procuraDiretiva(tokens[instPos], i - instPos);
+    diretiva = procuraDiretiva(tokens[instPos], expParams);
     if (diretiva  < 0 ) {
       if (passagem == 2){ /*verifica erros se for a segunda passagem*/
         switch (diretiva) {
@@ -199,6 +203,7 @@ void separa_tokens(FILE *fp, int passagem){ /*ASSIM QUE POSSIVEL, RETIRE TODOS O
     }
   }
 
+  /*Construcao da tabela de simbolos*/
   if (strchr(tokens[0], ':') != NULL && passagem == 1)  {
     strcpy(rotulo, tokens[0]);
     rotulo[strlen(rotulo)-1] = '\0';
@@ -207,9 +212,12 @@ void separa_tokens(FILE *fp, int passagem){ /*ASSIM QUE POSSIVEL, RETIRE TODOS O
     if(strcasecmp(tokens[instPos], "SPACE") == 0 && params == 1) {
       espaco *= atoi(tokens[instPos + 1]);
     }
-    printf("nome: %s\tlabel: %d\tposicao: %d\tvalor: %d\n", rotulo, secText, simPos, valor);
     if (procuraSimbolo(rotulo) == NULL) {
-      /*printf("adiciona\n" );*/
+      strcpy(simb.nome, rotulo);
+      simb.label = secText;
+      simb.posicao = simPos;
+      simb.valor = valor;
+      adicionaSimbolo(simb);
     }
     else printf("Erro %s declarado duas vezes\n", rotulo);
   }
