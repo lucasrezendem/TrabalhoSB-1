@@ -41,20 +41,14 @@ void separa_tokens(FILE *fp, char tokens[5][50]){ /*ASSIM QUE POSSIVEL, RETIRE T
 	char linha[160], *aux; /*cada linha tem NO MAXIMO cerca de 160 caracteres*/
 
 	fscanf(fp, "%[^\n]", linha); /*pega a linha a qual o fp estava apontando*/
-	printf("%ld\n", ftell(fp));
-	if(feof(fp)) {
-		printf("ARQUIVO ENCERRADO!\n");
-		return;
-	}
+	if(feof(fp)) return;
 	fseek(fp, 1, SEEK_CUR); /*faz o fp sair do \n e ja apontar pra proxima linha*/
 
 	aux = strtok(linha, " ,\t");
-	printf("token 0: %s\n", aux);
 	strcpy(tokens[0], aux);
 	for(i=1; i<5; i++){
 		aux = strtok(NULL, " ,\t");
 		if(aux == NULL) break; /*se a linha ja tiver acabado, antes de completar os 5 elementos, acaba com o loop*/
-		printf("token %d: %s\n", i, aux);
 		strcpy(tokens[i], aux);
 	}
 }
@@ -70,25 +64,13 @@ int main(int argc, char *argv[]){
 	} 
 
 
-
-	char tokens[5][50];
-	FILE *fp;
-	fp = fopen("triangulo.mcr", "r");
-	if(!fp){
-		printf("ERRO AO ABRIR O ARQUIVO!\n");
-		return -1;
-	}
-
-
-
 	if(!strcmp(argv[1], "-p")){
 		printf("---EXECUTA PREPROCESSAMENTO---\n");
-		limpa_linhas(argv[2]);
-		while(!feof(fp)) separa_tokens(fp, tokens); /*CHAMADA SOMENTE PRA TESTE! ASSIM QUE PUDER, RETIRE ESSA LINHA*/
+		limpa_linhas(argv[3]);
 	} 
 	else if(!strcmp(argv[1], "-m")){
 		printf("---EXECUTA EXPANSAO DE MACROS---\n");
-		limpa_linhas(argv[2]);
+		limpa_linhas(argv[3]);
 	}
 	else if(!strcmp(argv[1], "-o")){
 		printf("---EXECUTA MONTAGEM COMPLETA---\n");
@@ -98,7 +80,7 @@ int main(int argc, char *argv[]){
 		return -1;
 	}
 
-	fclose(fp);
+	limpa_linhas(argv[2]);
 
 	return 0;
 }
