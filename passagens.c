@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <ctype.h>
 #include "passagens.h"
 
 #define NUM_INSTRUCOES 14
@@ -42,7 +43,7 @@ static const Diretiva diretivas[NUM_DIRETIVAS] = {
 static ListSimbolo *ls = NULL;
 static int contPos = 0;
 static int secText = 0;
-static int constroiTabela = 1;
+static int constroiTabela = 1;/*flag que define se a tabela de simbolos deve ser construida*/
 
 void adicionaSimbolo(Simbolo sim) {
   ListSimbolo *aux = ls;
@@ -84,6 +85,7 @@ void esvaziaTabela() {
   }
 }
 
+/*imprime a tabela de simbolos*/
 void imprimeSimbolos() {
   ListSimbolo *aux = ls;
   if (ls == NULL) printf("Lista Vazia.\n");
@@ -108,6 +110,7 @@ void imprimeSimbolos() {
   }
 }
 
+/*retorna a posicao da instrucao no vetor ou valores de erro*/
 int procuraInstrucao(const char *nome, int operandos) {
   int i;
   for (i = 0; i < NUM_INSTRUCOES; i++) {
@@ -120,6 +123,7 @@ int procuraInstrucao(const char *nome, int operandos) {
   return NAO_ENCONTRADO;
 }
 
+/*retorna a posicao da diretiva no vetor ou valores de erro conforme o erro*/
 int procuraDiretiva(const char *nome, int operandos){
   int retVal = NAO_ENCONTRADO;
   int i;
@@ -160,11 +164,36 @@ void separa_tokens(FILE *fp, int passagem){
 		if(aux == NULL) break; /*se a linha ja tiver acabado, antes de completar os 5 elementos, acaba com o loop*/
 		strcpy(tokens[i], aux);
 	}
-  i--;
+  i--; /*faz i apontar para ultimo token valido*/
+  /*remove o '(' do indicador de linha*/
   if (strchr(tokens[i], '(')){
     strcpy(numLinha,tokens[i]);
     memmove(numLinha, numLinha+1, strlen(numLinha));
   }
+
+  /*verifica se os tokens sao validos*/
+  for (k = 0; k < i - 1; k++) {
+    if (tokens[k] != NULL){
+      if ((tokens[k][0] < 'a' || tokens[k][0] > 'z') && (tokens[k][0] < 'A' || tokens[k][0] > 'Z') && tokens[k][0] != '_') {
+        printf("Nome de token invalido 1( %c linha %s)\n", tokens[k][0], numLinha);
+        constroiTabela = 0;
+      }
+      for (j = 1; j < strlen(tokens[k]); j++) {
+        if (!isalnum(tokens[k][j]) && tokens[k][j] == '_') {
+          errTok = 1;
+          if (j == strlen(tokens[k]) - 1 && tokens[k][j] == ':' && k == 0){
+            errTok = 0;
+          }
+        }
+        printf("%d\n", errTok);
+      }
+      if (errTok == 1) {
+        printf("Nome de token invalido 2(linha %s)\n", numLinha);
+        constroiTabela = 0;
+      }
+    }
+  }
+
   /*verifica se a secao eh valida*/
   if (strcasecmp(tokens[0], "section") == 0 && !(strcasecmp(tokens[1], "data") == 0 || strcasecmp(tokens[1], "text") == 0)){
     constroiTabela = 0;
@@ -182,6 +211,7 @@ void separa_tokens(FILE *fp, int passagem){
     }
   }
 
+  /*Verifica se a instrucao eh o primeiro ou segundo token*/
   instPos = 0;
   if (strchr(tokens[0], ':') != NULL) {
     if (strchr(tokens[1], ':') != NULL) {
@@ -191,9 +221,10 @@ void separa_tokens(FILE *fp, int passagem){
     }
     else instPos = 1;
   }
+  /*verifica quantos parametros existem de acordo com a formula params = tokens - label - instrucao - comentarios*/
   expParams = i - instPos - 1; /*subtrair 1 quando botar o esquema da linha*/
-  if (secText == 1 && strcasecmp(tokens[0], "SECTION") != 0 && i != 0) {
-    instrucao = procuraInstrucao(tokens[instPos], expParams);
+  if (secText == 1 && strcasecmp(tokens[0], "SECTION") != 0 && i != 0) { /*verifica se eh uma instrucao ou uma diretiva*/
+    instrucao = procuraInstrucao(tokens[instPos], expParams); /*verifica se a instrucao eh valida*/
     if (instrucao < 0 ){
       constroiTabela = 0;
       if (passagem == 2){/*verifica erros se for a segunda passagem*/
@@ -217,7 +248,7 @@ void separa_tokens(FILE *fp, int passagem){
       espaco = params + 1;
     }
   } else if (strcasecmp(tokens[0], "SECTION") != 0 && i != 0) {
-    diretiva = procuraDiretiva(tokens[instPos], expParams);
+    diretiva = procuraDiretiva(tokens[instPos], expParams);/*verifica se a diretiva eh valida*/
     if (diretiva  < 0 ) {
       constroiTabela = 0;
       if (passagem == 2){ /*verifica erros se for a segunda passagem*/
@@ -243,42 +274,26 @@ void separa_tokens(FILE *fp, int passagem){
     }
   }
 
-  for (k = 0; k < i - 1; k++) {
-    if (tokens[k] != NULL){
-      if ((tokens[k][0] < 'a' || tokens[k][0] > 'z') && (tokens[k][0] < 'A' || tokens[k][0] > 'Z') && tokens[k][0] != '_') {
-        printf("Nome de token invalido 1( %c linha %s)\n", tokens[k][0], numLinha);
-        constroiTabela = 0;
-      }
-      for (j = 1; j < strlen(tokens[k]); j++) {
-        if ((tokens[k][j] < 'a' || tokens[k][j] > 'z') && (tokens[k][j] < 'A' || tokens[k][j] > 'Z') && tokens[k][j] != '_' && (tokens[k][j] < 48 || tokens[k][j] > 57)) {
-          errTok = 1;
-          if (j == strlen(tokens[k]) - 1 && tokens[k][j] == ':' && k == 0){
-            errTok = 0;
-          }
-        }
-        printf("%d\n", errTok);
-      }
-      if (errTok == 1) {
-        printf("Nome de token invalido 2(linha %s)\n", numLinha);
-        constroiTabela = 0;
-      }
-    }
-  }
-
   /*Construcao da tabela de simbolos*/
   if (strchr(tokens[0], ':') != NULL && passagem == 1 && constroiTabela == 1)  {
     strcpy(rotulo, tokens[0]);
     rotulo[strlen(rotulo)-1] = '\0';
     simPos = contPos;
-    if (strcasecmp(tokens[instPos], "CONST") == 0){
+
+    /*define o tipo de simbolo*/
+    if (strcasecmp(tokens[instPos], "CONST") == 0){ /*se for chamado por um const eh constante*/
       simTipo = CONSTANTE;
       valor = atoi(tokens[instPos + 1]);
     }
-    if (secText == 1) simTipo = LABEL;
-    else if (simTipo != CONSTANTE) simTipo = VARIAVEL;
+    if (secText == 1) simTipo = LABEL; /*se estiver na secao de texto eh um label*/
+    else if (simTipo != CONSTANTE) simTipo = VARIAVEL;/*caso contrario eh variavel*/
+
+    /*O espaco eh usado diferente para space com parametros, o espaco eh ocupado pelo valor passado como parametro*/
     if(strcasecmp(tokens[instPos], "SPACE") == 0 && params == 1) {
       espaco *= atoi(tokens[instPos + 1]);
     }
+
+    /*verifica se o simbolo ja existe antes de adicionar à tabela*/
     if (procuraSimbolo(rotulo) == NULL) {
       strcpy(simb.nome, rotulo);
       simb.tipo = simTipo;
@@ -291,6 +306,10 @@ void separa_tokens(FILE *fp, int passagem){
       printf("Erro %s declarado pela segunda vez (linha %s)\n", rotulo, numLinha);
     }
   }
-  if (constroiTabela == 0) esvaziaTabela();
+
+  /*se ocorreu erro apaga o que ja tiver feito da tabela*/
+  if (constroiTabela == 0 && passagem == 1) esvaziaTabela();
+
+  /*avanca o contador de posicoes*/
   contPos += espaco;
 }
