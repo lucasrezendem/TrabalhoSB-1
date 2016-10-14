@@ -34,7 +34,9 @@ int preenche_vetor_mem(FILE *fp, int16_t *mem, int tamanho){
 
 void run(int16_t *mem, int tamanho){
 	int16_t pc=0, acc=0;
-	int aux; /*usado somente para o input*/
+	char texto_input[7]; /*tamanho 7 pois o numero pode ter no maximo 5 digitos decimais + o sinal, e no maximo 4 digitos hexadecimais + sinal + 0x = 7*/ 
+	int aux;
+	/*aux eh usado somente para o input*/
 
 	while (pc<tamanho){
 		switch(mem[pc]){
@@ -109,8 +111,16 @@ void run(int16_t *mem, int tamanho){
 
 			case 12: /*INPUT*/
 				printf("(%d)\tINPUT: mem[%d] <- ", pc, mem[pc+1]);
-				scanf("%d", &aux);
+				scanf("%s", texto_input);
 				getchar();
+
+				if((texto_input[0]=='0' && (texto_input[1]=='x' || texto_input[1]=='X')) || 
+					(texto_input[1]=='0' && (texto_input[2]=='x' || texto_input[2]=='X'))) /*Se os primeiros caracteres forem 0x ou 0X ou -0x ou -0X, entao le como hexa*/
+					sscanf(texto_input, "%x", &aux);
+				else sscanf(texto_input, "%d", &aux); /*senao, le como decimal mesmo*/
+
+				printf("INPUT = %d\n", aux);
+
 				while(aux > 32767 || aux < -32768){
 					printf("ERRO: O VALOR PRECISA TER NO MAXIMO 16 BITS!\n");
 					printf("(%d)\tINPUT: mem[%d] <- ", pc, mem[pc+1]);
@@ -148,9 +158,6 @@ int main(int argc, char *argv[]){
 		printf("ERRO: O SIMULADOR ESPERA RECEBER O NOME DO ARQUIVO DO PROGRAMA A SER SIMULADO COMO ARGUMENTO!\n");
 		return -1;
 	}
-
-	/*printf("%s\n", argv[0]);
-	printf("%s\n", argv[1]);*/
 
 	FILE *fp;
 	int tamanho;
