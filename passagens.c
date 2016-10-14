@@ -120,11 +120,11 @@ int procuraDiretiva(const char *nome, int operandos){
   return retVal;
 }
 
-void separa_tokens(FILE *fp, int passagem){ /*ASSIM QUE POSSIVEL, RETIRE TODOS OS PRINTFS DESSA FUNCAO!!*/
-  /*TODO: adicionar linha onde ocorreu o erro*/
+void separa_tokens(FILE *fp, int passagem){
+  /*TODO: fazer a traducao e escrita no arquivo objeto*/
 	int i;
 	char linha[160], *aux, rotulo[50]; /*cada linha tem NO MAXIMO cerca de 160 caracteres*/
-  char tokens[5][50];
+  char tokens[5][50], numLinha[10];
   int simPos, params = 0, instPos = 0, instrucao, diretiva, espaco, valor = 0, expParams = 0;
   Simbolo simb;
 
@@ -144,29 +144,36 @@ void separa_tokens(FILE *fp, int passagem){ /*ASSIM QUE POSSIVEL, RETIRE TODOS O
     } /*se a linha ja tiver acabado, antes de completar os 5 elementos, acaba com o loop*/
 		strcpy(tokens[i], aux);
 	}
+  strcpy(numLinha,tokens[i]);
+  memmove(numLinha, numLinha+1, strlen(numLinha));
 
   /*se ele achar um simbolo novo na secao de texto ele é um label*/
   if (strcasecmp(tokens[0], "section") == 0 && strcasecmp(tokens[1], "text") == 0) secText = 1;
 
-  /*se for na secao de dados ele é uma variavel*/
-  else if (strcasecmp(tokens[0], "section") == 0 && strcasecmp(tokens[1], "data") == 0) secText = 0;
+  /*se for na secao de dados ele é uma variavel e verifica se veio depois da section data*/
+  else if (strcasecmp(tokens[0], "section") == 0 && strcasecmp(tokens[1], "data") == 0 && secText == 1) secText = 0;
+  else if (strcasecmp(tokens[0], "section") == 0 && strcasecmp(tokens[1], "data") == 0)
+    printf("Seção de dados sem seção de texto anterior (linha %s).\n", numLinha);
+  else if (strcasecmp(tokens[0], "section") == 0 &&
+          !(strcasecmp(tokens[1], "data") == 0 || strcasecmp(tokens[1], "text") == 0))
+    printf("Seção invalida (linha %s).\n", numLinha);
 
   instPos = 0;
   if (strchr(tokens[0], ':') != NULL) instPos = 1;
-  expParams = i - instPos; /*subtrair 1 quando botar o esquema da linha*/
+  expParams = i - instPos - 1; /*subtrair 1 quando botar o esquema da linha*/
   if (secText == 1 && strcasecmp(tokens[0], "SECTION") != 0) {
     instrucao = procuraInstrucao(tokens[instPos], expParams);
     if (instrucao < 0 ){
       if (passagem == 2){/*verifica erros se for a segunda passagem*/
         switch (instrucao) {
           case NAO_ENCONTRADO:
-            printf("Instrucao desconhecida: %s\n", tokens[instPos]);
+            printf("Instrucao desconhecida: %s (linha %s)\n", tokens[instPos], numLinha);
             break;
           case EXCESSO_OPERANDOS:
-            printf("Excesso de operandos\n");
+            printf("Instrucao com excesso de operandos (linha %s)\n", numLinha);
             break;
           case FALTA_OPERANDOS:
-            printf("Operandos insuficientes\n");
+            printf("Instrucao com operandos insuficientes (linha %s)\n", numLinha);
             break;
           default:
             printf("ERRO DE EXECUCAO\n");
@@ -183,13 +190,13 @@ void separa_tokens(FILE *fp, int passagem){ /*ASSIM QUE POSSIVEL, RETIRE TODOS O
       if (passagem == 2){ /*verifica erros se for a segunda passagem*/
         switch (diretiva) {
           case NAO_ENCONTRADO:
-            printf("Diretiva desconhecida: %s\n", tokens[instPos]);
+            printf("Diretiva desconhecida: %s (linha %s)\n", tokens[instPos], numLinha);
             break;
           case EXCESSO_OPERANDOS:
-            printf("Excesso de operandos\n");
+            printf("Diretiva com excesso de operandos (linha %s)\n", numLinha);
             break;
           case FALTA_OPERANDOS:
-            printf("Operandos insuficientes\n");
+            printf("Diretiva com operandos insuficientes (linha %s)\n", numLinha);
             break;
           default:
             printf("ERRO DE EXECUCAO\n");
@@ -219,7 +226,7 @@ void separa_tokens(FILE *fp, int passagem){ /*ASSIM QUE POSSIVEL, RETIRE TODOS O
       simb.valor = valor;
       adicionaSimbolo(simb);
     }
-    else printf("Erro %s declarado duas vezes\n", rotulo);
+    else printf("Erro %s declarado pela segunda vez (linha %s)\n", rotulo, numLinha);
   }
   contPos += espaco;
 }
