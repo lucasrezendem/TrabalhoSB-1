@@ -16,6 +16,8 @@ void limpa_linhas(char *nome_arquivo){
 	for(i=0; i<216 && !feof(fp); i++){
 
 		fscanf(fp, "%[^\n(]", programa[i]); /*pega uma linha toda ate achar um \n ou um (*/
+		int tam = strlen(programa[i]);
+		programa[i][tam-1]='\0';
 		do{
 			if(feof(fp)) break;
 			aux = fgetc(fp); 
