@@ -3,7 +3,7 @@
 
 typedef struct simbolo {
   char nome[50];
-  int label;
+  int tipo;
   int posicao;
   int valor;
 } Simbolo;

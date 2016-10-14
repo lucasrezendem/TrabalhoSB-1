@@ -10,14 +10,9 @@ int main(int argc, char const *argv[]) {
     printf("ERRO AO ABRIR O ARQUIVO!\n");
     return -1;
   }
-  imprimeSimbolos();
   while (!feof(fp)) separa_tokens(fp,1);
   imprimeSimbolos();
   esvaziaTabela();
-  imprimeSimbolos();
-  char linha[50] = "(15";
-  memmove(linha, linha+1, strlen(linha));
-  printf("%s\n", linha);
   fclose(fp);
   return 0;
 }
