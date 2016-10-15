@@ -6,6 +6,7 @@ typedef struct simbolo {
   int tipo;
   int posicao;
   int valor;
+  int tam;
 } Simbolo;
 
 typedef struct listSimbolo ListSimbolo;

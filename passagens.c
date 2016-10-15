@@ -153,7 +153,7 @@ int procuraDiretiva(const char *nome, int operandos){
 }
 
 int separaTokens(FILE *fp, char tokens[10][50]) {
-  int i;
+  int i, j;
   char linha[160], *aux; /*cada linha tem NO MAXIMO cerca de 160 caracteres*/
   fscanf(fp, "%[^\n]", linha); /*pega a linha a qual o fp estava apontando*/
   if(feof(fp)) {
@@ -168,6 +168,15 @@ int separaTokens(FILE *fp, char tokens[10][50]) {
 		strcpy(tokens[i], aux);
 	}
   i--; /*faz i apontar para ultimo token valido*/
+  for(j = 2; j < i; j++) {
+    if (strlen(tokens[j]) < 3 && tokens[j][0] == '+') {
+      strcat(tokens[j-1], tokens[j]);
+    }
+    if (tokens[j-2][strlen(tokens[j-2])-1] == '+') {
+      strcat(tokens[j-2], tokens[j]);
+      i -= 2;
+    }
+  }
   return i;
 }
 
@@ -178,17 +187,17 @@ void getNumLinha(char *dest, const char *token) {
   }
 }
 
-void validaTokens(int i, const char tokens[10][50], const char *numLinha) {
+void validaTokens(int i, char tokens[10][50], const char *numLinha, int instPos) {
   int k, j, errTok = 0;
-  for (k = 0; k < i - 1; k++) {
+  for (k = 0; k < i; k++) {
     if (tokens[k] != NULL){
-      if (!isalpha(tokens[k][0]) && tokens[k][0] != '_') {
+      if (!isalpha(tokens[k][0]) && tokens[k][0] != '_' && (strlen(tokens[k]) == 1 && k < instPos)) {
         printf("Token '%s' invalido (linha %s)\n", tokens[k], numLinha);
         erroCompilacao = 1;
       }
       for (j = 1; j < strlen(tokens[k]); j++) {
         if (!isalnum(tokens[k][j]) && tokens[k][j] != '_') {
-          if (!(j == strlen(tokens[k]) - 1 && (tokens[k][j] == ':' && k == 0))){
+          if (!(j == strlen(tokens[k]) - 1 && (tokens[k][j] == ':' && k == 0)) && !(tokens[k][j] == '+' && isdigit(tokens[k][j+1]) && isalpha(tokens[k][j-1]))){
             errTok = 1;
           }
         }
@@ -220,15 +229,17 @@ void validaSecao(const char tokens[10][50], const char *numLinha) {
   }
 }
 
-int getInstPos(const char tokens[10][50], const char *numLinha) {
-  int instPos = 0;
+int getInstPos(const char tokens[10][50], const char *numLinha, int i) {
+  int instPos = 0, k;
   if (strchr(tokens[0], ':') != NULL) {
-    if (strchr(tokens[1], ':') != NULL) {
-      erroCompilacao = 1;
-      printf("Dois labels declarados na mesma linha (linha %s)\n", numLinha);
-      instPos = 2;
+    for (k = 1; k < i + 1; k++) {
+      if (strchr(tokens[k], ':') != NULL) {
+        erroCompilacao = 1;
+        printf("Dois labels declarados na mesma linha (linha %s)\n", numLinha);
+        return (k == 1 ? 2 : 1);
+      }
     }
-    else instPos = 1;
+    return 1;
   }
   return instPos;
 }
@@ -245,7 +256,7 @@ int calculaEspaco(const char tokens[10][50], const char *numLinha, int instPos, 
       else printf("Instrucao desconhecida: '%s' (linha %s)\n", tokens[instPos], numLinha);
       return 0;
     } else espaco = instrucoes[instrucao].operandos + 1;
-  } else if (strcasecmp(tokens[0], "SECTION") != 0 && i != 0) {
+  } else if (secText == 0 && strcasecmp(tokens[0], "SECTION") != 0 && i != 0) {
     diretiva = procuraDiretiva(tokens[instPos], expParams);/*verifica se a diretiva eh valida*/
     if (diretiva  < 0 ) {
       erroCompilacao = 1;
@@ -290,14 +301,15 @@ void primeiraPassagem(FILE *fp){
   if(i > -1){
     getNumLinha(numLinha, tokens[i]);
 
+    /*Verifica se a instrucao eh o primeiro ou segundo token*/
+    instPos = getInstPos(tokens, numLinha, i);
+
     /*verifica se os tokens sao validos*/
-    validaTokens(i, tokens, numLinha);
+    validaTokens(i, tokens, numLinha, instPos);
 
     /*verifica se a secao eh valida*/
     validaSecao(tokens, numLinha);
 
-    /*Verifica se a instrucao eh o primeiro ou segundo token*/
-    instPos = getInstPos(tokens, numLinha);
 
     espaco = calculaEspaco(tokens, numLinha, instPos, i);
 
@@ -322,6 +334,7 @@ void primeiraPassagem(FILE *fp){
         simb.tipo = simTipo;
         simb.posicao = simPos;
         simb.valor = valor;
+        simb.tam = espaco;
         adicionaSimbolo(simb);
       }
       else {
