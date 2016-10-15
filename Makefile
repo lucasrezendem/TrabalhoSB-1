@@ -1,12 +1,16 @@
 CC = gcc
-CFLAGS = -Wall -ansi
+CFLAGS = -Wall -ansi -I.
+DEPS = passagens.h
+OBJ = passagens.o entryPoint.o 
 
-all:
-	$(CC) $(CFLAGS) -c passagens.c
-	$(CC) $(CFLAGS) -o main entryPoint.c passagens.o
+%.o: %.c $(DEPS)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+main: $(OBJ)
+	gcc -o $@ $^ $(CFLAGS)
 
 .PHONY: clean
 
 clean:
 	rm -f passagens.o
-	rm -f main
+	rm -f entryPoint.o
