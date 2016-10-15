@@ -333,4 +333,8 @@ void primeiraPassagem(FILE *fp){
     /*avanca o contador de posicoes*/
     contPos += espaco;
   }
+  else if (secText == 1) {
+    erroCompilacao = 1;
+    printf("Secao de dados ausente.\n");
+  }
 }
