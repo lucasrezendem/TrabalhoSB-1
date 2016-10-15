@@ -37,10 +37,15 @@ void imprimeSimbolos();
 
 /*Operacoes sobre as tabelas de instrucoes e diretivas*/
 int procuraInstrucao(const char *nome, int operandos);
+int procuraInstrucaoNom(const char *nome);
 int procuraDiretiva(const char *nome, int operandos);
 
 int separaTokens(FILE *fp, char tokens[10][50]);
 void getNumLinha(char *dest, const char *token);
+void validaTokens(int i, char tokens[10][50], const char *numLinha, int instPos);
+void validaSecao(const char tokens[10][50], const char *numLinha);
+int getInstPos(const char tokens[10][50], const char *numLinha, int i);
+int calculaEspaco(const char tokens[10][50], const char *numLinha, int instPos, int i)
 
 void primeiraPassagem(FILE *fp);
 
