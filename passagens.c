@@ -43,7 +43,7 @@ static const Diretiva diretivas[NUM_DIRETIVAS] = {
 static ListSimbolo *ls = NULL;
 static int contPos = 0;
 static int secText = 0;
-static int erroCompilacao = 1;/*flag que define se a tabela de simbolos deve ser construida*/
+static int erroCompilacao = 0;/*flag que define se a tabela de simbolos deve ser construida*/
 
 void adicionaSimbolo(Simbolo sim) {
   ListSimbolo *aux = ls;
@@ -123,6 +123,16 @@ int procuraInstrucao(const char *nome, int operandos) {
   return NAO_ENCONTRADO;
 }
 
+int procuraInstrucaoNom(const char *nome) {
+  int i;
+  for (i = 0; i < NUM_INSTRUCOES; i++) {
+    if (strcasecmp(nome, instrucoes[i].nome) == 0){
+      return i;
+    }
+  }
+  return NAO_ENCONTRADO;
+}
+
 /*retorna a posicao da diretiva no vetor ou valores de erro conforme o erro*/
 int procuraDiretiva(const char *nome, int operandos){
   int retVal = NAO_ENCONTRADO;
@@ -142,21 +152,14 @@ int procuraDiretiva(const char *nome, int operandos){
   return retVal;
 }
 
-void primeiraPassagem(FILE *fp){
-	int i, j, k;
-	char linha[160], *aux, rotulo[50]; /*cada linha tem NO MAXIMO cerca de 160 caracteres*/
-  char tokens[10][50], numLinha[10];
-  int simPos, params = 0, instPos = 0, instrucao, diretiva, espaco = 0, valor = 0, expParams = 0;
-  int simTipo = 0, errTok = 0;
-  Simbolo simb;
-
-
-	fscanf(fp, "%[^\n]", linha); /*pega a linha a qual o fp estava apontando*/
-	if(feof(fp)) {
-		return;
-	}
-	fseek(fp, 1, SEEK_CUR); /*faz o fp sair do \n e ja apontar pra proxima linha*/
-
+int separaTokens(FILE *fp, char tokens[10][50]) {
+  int i;
+  char linha[160], *aux; /*cada linha tem NO MAXIMO cerca de 160 caracteres*/
+  fscanf(fp, "%[^\n]", linha); /*pega a linha a qual o fp estava apontando*/
+  if(feof(fp)) {
+  	return -1;
+  }
+  fseek(fp, 1, SEEK_CUR); /*faz o fp sair do \n e ja apontar pra proxima linha*/
 	aux = strtok(linha, " ,\t");
 	strcpy(tokens[0], aux);
 	for(i=1; i<NUM_TOKENS; i++){
@@ -165,18 +168,23 @@ void primeiraPassagem(FILE *fp){
 		strcpy(tokens[i], aux);
 	}
   i--; /*faz i apontar para ultimo token valido*/
-  /*remove o '(' do indicador de linha*/
-  if (strchr(tokens[i], '(')){
-    strcpy(numLinha,tokens[i]);
-    memmove(numLinha, numLinha+1, strlen(numLinha));
-  }
+  return i;
+}
 
-  /*verifica se os tokens sao validos*/
+void getNumLinha(char *dest, const char *token) {
+  if (strchr(token, '(')){
+    strcpy(dest,token);
+    memmove(dest, dest+1, strlen(dest));
+  }
+}
+
+void validaTokens(int i, const char tokens[10][50], const char *numLinha) {
+  int k, j, errTok = 0;
   for (k = 0; k < i - 1; k++) {
     if (tokens[k] != NULL){
       if (!isalpha(tokens[k][0]) && tokens[k][0] != '_') {
-        printf("Nome de token invalido 1( %c linha %s)\n", tokens[k][0], numLinha);
-        erroCompilacao = 0;
+        printf("Token '%s' invalido (linha %s)\n", tokens[k], numLinha);
+        erroCompilacao = 1;
       }
       for (j = 1; j < strlen(tokens[k]); j++) {
         if (!isalnum(tokens[k][j]) && tokens[k][j] != '_') {
@@ -186,15 +194,17 @@ void primeiraPassagem(FILE *fp){
         }
       }
       if (errTok == 1) {
-        printf("Nome de token invalido 2(%s linha %s)\n", tokens[k],  numLinha);
-        erroCompilacao = 0;
+        printf("Token '%s' invalido (inha %s)\n", tokens[k],  numLinha);
+        erroCompilacao = 1;
       }
     }
   }
+}
 
+void validaSecao(const char tokens[10][50], const char *numLinha) {
   /*verifica se a secao eh valida*/
   if (strcasecmp(tokens[0], "section") == 0 && !(strcasecmp(tokens[1], "data") == 0 || strcasecmp(tokens[1], "text") == 0)){
-    erroCompilacao = 0;
+    erroCompilacao = 1;
     printf("Seção invalida (linha %s).\n", numLinha);
   }
   /*se ele achar um simbolo novo na secao de texto ele é um label*/
@@ -204,50 +214,41 @@ void primeiraPassagem(FILE *fp){
   else if (strcasecmp(tokens[0], "section") == 0 && strcasecmp(tokens[1], "data") == 0){
     if (secText == 1) secText = 0;
     else {
-      erroCompilacao = 0;
+      erroCompilacao = 1;
       printf("Secao de dados sem secao de texto anterior (linha %s)\n", numLinha);
     }
   }
+}
 
-  /*Verifica se a instrucao eh o primeiro ou segundo token*/
-  instPos = 0;
+int getInstPos(const char tokens[10][50], const char *numLinha) {
+  int instPos = 0;
   if (strchr(tokens[0], ':') != NULL) {
     if (strchr(tokens[1], ':') != NULL) {
-      erroCompilacao = 0;
+      erroCompilacao = 1;
       printf("Dois labels declarados na mesma linha (linha %s)\n", numLinha);
       instPos = 2;
     }
     else instPos = 1;
   }
-  /*verifica quantos parametros existem de acordo com a formula params = tokens - label - instrucao - comentarios*/
-  expParams = i - instPos - 1; /*subtrair 1 quando botar o esquema da linha*/
-  if (secText == 1 && strcasecmp(tokens[0], "SECTION") != 0 && i != 0) { /*verifica se eh uma instrucao ou uma diretiva*/
-    instrucao = procuraInstrucao(tokens[instPos], expParams); /*verifica se a instrucao eh valida*/
-    if (instrucao < 0 ){
-      erroCompilacao = 0;
-      switch (instrucao) {
-        case NAO_ENCONTRADO:
-          if (procuraDiretiva(tokens[instPos], expParams) != NAO_ENCONTRADO) printf("Diretiva '%s' na secao de texto (linha %s)\n", tokens[instPos], numLinha);
-          else printf("Instrucao desconhecida: '%s' (linha %s)\n", tokens[instPos], numLinha);
-          break;
-        case EXCESSO_OPERANDOS:
-          printf("Instrucao com excesso de operandos (linha %s)\n", numLinha);
-          break;
-        case FALTA_OPERANDOS:
-          printf("Instrucao com operandos insuficientes (linha %s)\n", numLinha);
-          break;
-        default:
-          printf("ERRO DE EXECUCAO\n");
-          break;
-      }
-    } else {
-      params = instrucoes[instrucao].operandos;
-      espaco = params + 1;
-    }
+  return instPos;
+}
+
+int calculaEspaco(const char tokens[10][50], const char *numLinha, int instPos, int i) {
+  int instrucao, diretiva, espaco = 0;
+  int expParams = i - instPos - 1;
+
+  if (secText == 1 && strcasecmp(tokens[0], "SECTION") != 0 && i != 0) {
+    instrucao = procuraInstrucaoNom(tokens[instPos]); /*verifica qual eh a instrucao*/
+    if (instrucao == NAO_ENCONTRADO){
+      erroCompilacao = 1;
+      if (procuraDiretiva(tokens[instPos], expParams) != NAO_ENCONTRADO) printf("Diretiva '%s' na secao de texto (linha %s)\n", tokens[instPos], numLinha);
+      else printf("Instrucao desconhecida: '%s' (linha %s)\n", tokens[instPos], numLinha);
+      return 0;
+    } else espaco = instrucoes[instrucao].operandos + 1;
   } else if (strcasecmp(tokens[0], "SECTION") != 0 && i != 0) {
     diretiva = procuraDiretiva(tokens[instPos], expParams);/*verifica se a diretiva eh valida*/
     if (diretiva  < 0 ) {
-      erroCompilacao = 0;
+      erroCompilacao = 1;
       switch (diretiva) {
         case NAO_ENCONTRADO:
           if (procuraInstrucao(tokens[instPos], expParams) != NAO_ENCONTRADO) printf("Instrucao '%s' na secao de dados (linha %s)\n", tokens[instPos], numLinha);
@@ -263,46 +264,73 @@ void primeiraPassagem(FILE *fp){
           printf("ERRO DE EXECUCAO\n");
           break;
       }
-    }
-    else{
-      params = diretivas[diretiva].operandos;
-      espaco = diretivas[diretiva].espaco;
-    }
-  }
-
-  /*Construcao da tabela de simbolos*/
-  if (strchr(tokens[0], ':') != NULL && erroCompilacao == 1)  {
-    strcpy(rotulo, tokens[0]);
-    rotulo[strlen(rotulo)-1] = '\0';
-    simPos = contPos;
-
-    /*define o tipo de simbolo*/
-    if (strcasecmp(tokens[instPos], "CONST") == 0){ /*se for chamado por um const eh constante*/
-      simTipo = CONSTANTE;
-      valor = atoi(tokens[instPos + 1]);
-    }
-    if (secText == 1) simTipo = LABEL; /*se estiver na secao de texto eh um label*/
-    else if (simTipo != CONSTANTE) simTipo = VARIAVEL;/*caso contrario eh variavel*/
-
-    /*O espaco eh usado diferente para space com parametros, o espaco eh ocupado pelo valor passado como parametro*/
-    if(strcasecmp(tokens[instPos], "SPACE") == 0 && params == 1) {
-      espaco *= atoi(tokens[instPos + 1]);
-    }
-
-    /*verifica se o simbolo ja existe antes de adicionar à tabela*/
-    if (procuraSimbolo(rotulo) == NULL) {
-      strcpy(simb.nome, rotulo);
-      simb.tipo = simTipo;
-      simb.posicao = simPos;
-      simb.valor = valor;
-      adicionaSimbolo(simb);
+      return 0;
     }
     else {
-      erroCompilacao = 0;
-      printf("Erro %s declarado pela segunda vez (linha %s)\n", rotulo, numLinha);
+      espaco = diretivas[diretiva].espaco;
+      /*O espaco eh usado diferente para space com parametros, o espaco eh ocupado pelo valor passado como parametro*/
+      if (strcasecmp(diretivas[diretiva].nome, "SPACE") == 0 && diretivas[diretiva].operandos == 1)
+        espaco *= atoi(tokens[instPos + 1]);
     }
   }
+  return espaco;
+}
 
-  /*avanca o contador de posicoes*/
-  contPos += espaco;
+void primeiraPassagem(FILE *fp){
+	int i;
+	char rotulo[50];
+  char tokens[10][50], numLinha[10];
+  int simPos, instPos = 0, espaco = 0, valor = 0;
+  int simTipo = 0;
+  Simbolo simb;
+
+
+	i = separaTokens(fp, tokens);
+  /*remove o '(' do indicador de linha*/
+  if(i > -1){
+    getNumLinha(numLinha, tokens[i]);
+
+    /*verifica se os tokens sao validos*/
+    validaTokens(i, tokens, numLinha);
+
+    /*verifica se a secao eh valida*/
+    validaSecao(tokens, numLinha);
+
+    /*Verifica se a instrucao eh o primeiro ou segundo token*/
+    instPos = getInstPos(tokens, numLinha);
+
+    espaco = calculaEspaco(tokens, numLinha, instPos, i);
+
+
+    /*Construcao da tabela de simbolos*/
+    if (strchr(tokens[0], ':') != NULL)  {
+      strcpy(rotulo, tokens[0]);
+      rotulo[strlen(rotulo)-1] = '\0';
+      simPos = contPos;
+
+      /*define o tipo de simbolo*/
+      if (strcasecmp(tokens[instPos], "CONST") == 0){ /*se for chamado por um const eh constante*/
+        simTipo = CONSTANTE;
+        valor = atoi(tokens[instPos + 1]);
+      }
+      if (secText == 1) simTipo = LABEL; /*se estiver na secao de texto eh um label*/
+      else if (simTipo != CONSTANTE) simTipo = VARIAVEL;/*caso contrario eh variavel*/
+
+      /*verifica se o simbolo ja existe antes de adicionar à tabela*/
+      if (procuraSimbolo(rotulo) == NULL) {
+        strcpy(simb.nome, rotulo);
+        simb.tipo = simTipo;
+        simb.posicao = simPos;
+        simb.valor = valor;
+        adicionaSimbolo(simb);
+      }
+      else {
+        erroCompilacao = 1;
+        printf("Erro '%s' declarado pela segunda vez (linha %s)\n", rotulo, numLinha);
+      }
+    }
+
+    /*avanca o contador de posicoes*/
+    contPos += espaco;
+  }
 }

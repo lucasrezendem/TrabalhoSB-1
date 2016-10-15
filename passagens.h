@@ -38,6 +38,9 @@ void imprimeSimbolos();
 int procuraInstrucao(const char *nome, int operandos);
 int procuraDiretiva(const char *nome, int operandos);
 
+int separaTokens(FILE *fp, char tokens[10][50]);
+void getNumLinha(char *dest, const char *token);
+
 void primeiraPassagem(FILE *fp);
 
 #endif
