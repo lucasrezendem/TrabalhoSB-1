@@ -10,7 +10,7 @@ int main(int argc, char const *argv[]) {
     printf("ERRO AO ABRIR O ARQUIVO!\n");
     return -1;
   }
-  while (!feof(fp)) separa_tokens(fp,1);
+  while (!feof(fp)) primeiraPassagem(fp);
   imprimeSimbolos();
   esvaziaTabela();
   fclose(fp);

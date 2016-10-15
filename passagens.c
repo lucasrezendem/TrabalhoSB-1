@@ -43,7 +43,7 @@ static const Diretiva diretivas[NUM_DIRETIVAS] = {
 static ListSimbolo *ls = NULL;
 static int contPos = 0;
 static int secText = 0;
-static int constroiTabela = 1;/*flag que define se a tabela de simbolos deve ser construida*/
+static int erroCompilacao = 1;/*flag que define se a tabela de simbolos deve ser construida*/
 
 void adicionaSimbolo(Simbolo sim) {
   ListSimbolo *aux = ls;
@@ -133,6 +133,7 @@ int procuraDiretiva(const char *nome, int operandos){
       else if (operandos < diretivas[i].operandos) retVal = FALTA_OPERANDOS;
       else {
         retVal = i;
+        break;
         if (strcasecmp(diretivas[i].nome, "SPACE") == 0) break; /*evita que SPACE sem operandos lance erro de falta de operands*/
       }
 
@@ -141,12 +142,11 @@ int procuraDiretiva(const char *nome, int operandos){
   return retVal;
 }
 
-void separa_tokens(FILE *fp, int passagem){
-  /*TODO: fazer a traducao e escrita no arquivo objeto*/
-	int i, j , k;
+void primeiraPassagem(FILE *fp){
+	int i, j, k;
 	char linha[160], *aux, rotulo[50]; /*cada linha tem NO MAXIMO cerca de 160 caracteres*/
   char tokens[10][50], numLinha[10];
-  int simPos, params = 0, instPos = 0, instrucao, diretiva, espaco, valor = 0, expParams = 0;
+  int simPos, params = 0, instPos = 0, instrucao, diretiva, espaco = 0, valor = 0, expParams = 0;
   int simTipo = 0, errTok = 0;
   Simbolo simb;
 
@@ -174,29 +174,27 @@ void separa_tokens(FILE *fp, int passagem){
   /*verifica se os tokens sao validos*/
   for (k = 0; k < i - 1; k++) {
     if (tokens[k] != NULL){
-      if ((tokens[k][0] < 'a' || tokens[k][0] > 'z') && (tokens[k][0] < 'A' || tokens[k][0] > 'Z') && tokens[k][0] != '_') {
+      if (!isalpha(tokens[k][0]) && tokens[k][0] != '_') {
         printf("Nome de token invalido 1( %c linha %s)\n", tokens[k][0], numLinha);
-        constroiTabela = 0;
+        erroCompilacao = 0;
       }
       for (j = 1; j < strlen(tokens[k]); j++) {
-        if (!isalnum(tokens[k][j]) && tokens[k][j] == '_') {
-          errTok = 1;
-          if (j == strlen(tokens[k]) - 1 && tokens[k][j] == ':' && k == 0){
-            errTok = 0;
+        if (!isalnum(tokens[k][j]) && tokens[k][j] != '_') {
+          if (!(j == strlen(tokens[k]) - 1 && (tokens[k][j] == ':' && k == 0))){
+            errTok = 1;
           }
         }
-        printf("%d\n", errTok);
       }
       if (errTok == 1) {
-        printf("Nome de token invalido 2(linha %s)\n", numLinha);
-        constroiTabela = 0;
+        printf("Nome de token invalido 2(%s linha %s)\n", tokens[k],  numLinha);
+        erroCompilacao = 0;
       }
     }
   }
 
   /*verifica se a secao eh valida*/
   if (strcasecmp(tokens[0], "section") == 0 && !(strcasecmp(tokens[1], "data") == 0 || strcasecmp(tokens[1], "text") == 0)){
-    constroiTabela = 0;
+    erroCompilacao = 0;
     printf("Seção invalida (linha %s).\n", numLinha);
   }
   /*se ele achar um simbolo novo na secao de texto ele é um label*/
@@ -206,7 +204,7 @@ void separa_tokens(FILE *fp, int passagem){
   else if (strcasecmp(tokens[0], "section") == 0 && strcasecmp(tokens[1], "data") == 0){
     if (secText == 1) secText = 0;
     else {
-      constroiTabela = 0;
+      erroCompilacao = 0;
       printf("Secao de dados sem secao de texto anterior (linha %s)\n", numLinha);
     }
   }
@@ -215,7 +213,7 @@ void separa_tokens(FILE *fp, int passagem){
   instPos = 0;
   if (strchr(tokens[0], ':') != NULL) {
     if (strchr(tokens[1], ':') != NULL) {
-      constroiTabela = 0;
+      erroCompilacao = 0;
       printf("Dois labels declarados na mesma linha (linha %s)\n", numLinha);
       instPos = 2;
     }
@@ -226,22 +224,21 @@ void separa_tokens(FILE *fp, int passagem){
   if (secText == 1 && strcasecmp(tokens[0], "SECTION") != 0 && i != 0) { /*verifica se eh uma instrucao ou uma diretiva*/
     instrucao = procuraInstrucao(tokens[instPos], expParams); /*verifica se a instrucao eh valida*/
     if (instrucao < 0 ){
-      constroiTabela = 0;
-      if (passagem == 2){/*verifica erros se for a segunda passagem*/
-        switch (instrucao) {
-          case NAO_ENCONTRADO:
-            printf("Instrucao desconhecida: %s (linha %s)\n", tokens[instPos], numLinha);
-            break;
-          case EXCESSO_OPERANDOS:
-            printf("Instrucao com excesso de operandos (linha %s)\n", numLinha);
-            break;
-          case FALTA_OPERANDOS:
-            printf("Instrucao com operandos insuficientes (linha %s)\n", numLinha);
-            break;
-          default:
-            printf("ERRO DE EXECUCAO\n");
-            break;
-        }
+      erroCompilacao = 0;
+      switch (instrucao) {
+        case NAO_ENCONTRADO:
+          if (procuraDiretiva(tokens[instPos], expParams) != NAO_ENCONTRADO) printf("Diretiva '%s' na secao de texto (linha %s)\n", tokens[instPos], numLinha);
+          else printf("Instrucao desconhecida: '%s' (linha %s)\n", tokens[instPos], numLinha);
+          break;
+        case EXCESSO_OPERANDOS:
+          printf("Instrucao com excesso de operandos (linha %s)\n", numLinha);
+          break;
+        case FALTA_OPERANDOS:
+          printf("Instrucao com operandos insuficientes (linha %s)\n", numLinha);
+          break;
+        default:
+          printf("ERRO DE EXECUCAO\n");
+          break;
       }
     } else {
       params = instrucoes[instrucao].operandos;
@@ -250,22 +247,21 @@ void separa_tokens(FILE *fp, int passagem){
   } else if (strcasecmp(tokens[0], "SECTION") != 0 && i != 0) {
     diretiva = procuraDiretiva(tokens[instPos], expParams);/*verifica se a diretiva eh valida*/
     if (diretiva  < 0 ) {
-      constroiTabela = 0;
-      if (passagem == 2){ /*verifica erros se for a segunda passagem*/
-        switch (diretiva) {
-          case NAO_ENCONTRADO:
-            printf("Diretiva desconhecida: %s (linha %s)\n", tokens[instPos], numLinha);
-            break;
-          case EXCESSO_OPERANDOS:
-            printf("Diretiva com excesso de operandos (linha %s)\n", numLinha);
-            break;
-          case FALTA_OPERANDOS:
-            printf("Diretiva com operandos insuficientes (linha %s)\n", numLinha);
-            break;
-          default:
-            printf("ERRO DE EXECUCAO\n");
-            break;
-        }
+      erroCompilacao = 0;
+      switch (diretiva) {
+        case NAO_ENCONTRADO:
+          if (procuraInstrucao(tokens[instPos], expParams) != NAO_ENCONTRADO) printf("Instrucao '%s' na secao de dados (linha %s)\n", tokens[instPos], numLinha);
+          else printf("Diretiva desconhecida: '%s' (linha %s)\n", tokens[instPos], numLinha);
+          break;
+        case EXCESSO_OPERANDOS:
+          printf("Diretiva com excesso de operandos (linha %s)\n", numLinha);
+          break;
+        case FALTA_OPERANDOS:
+          printf("Diretiva com operandos insuficientes (linha %s)\n", numLinha);
+          break;
+        default:
+          printf("ERRO DE EXECUCAO\n");
+          break;
       }
     }
     else{
@@ -275,7 +271,7 @@ void separa_tokens(FILE *fp, int passagem){
   }
 
   /*Construcao da tabela de simbolos*/
-  if (strchr(tokens[0], ':') != NULL && passagem == 1 && constroiTabela == 1)  {
+  if (strchr(tokens[0], ':') != NULL && erroCompilacao == 1)  {
     strcpy(rotulo, tokens[0]);
     rotulo[strlen(rotulo)-1] = '\0';
     simPos = contPos;
@@ -302,13 +298,10 @@ void separa_tokens(FILE *fp, int passagem){
       adicionaSimbolo(simb);
     }
     else {
-      constroiTabela = 0;
+      erroCompilacao = 0;
       printf("Erro %s declarado pela segunda vez (linha %s)\n", rotulo, numLinha);
     }
   }
-
-  /*se ocorreu erro apaga o que ja tiver feito da tabela*/
-  if (constroiTabela == 0 && passagem == 1) esvaziaTabela();
 
   /*avanca o contador de posicoes*/
   contPos += espaco;

@@ -38,6 +38,6 @@ void imprimeSimbolos();
 int procuraInstrucao(const char *nome, int operandos);
 int procuraDiretiva(const char *nome, int operandos);
 
-void separa_tokens(FILE *fp, int passagem);
+void primeiraPassagem(FILE *fp);
 
 #endif
