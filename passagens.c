@@ -43,6 +43,7 @@ static const Diretiva diretivas[NUM_DIRETIVAS] = {
 static ListSimbolo *ls = NULL;
 static int contPos = 0;
 static int secText = 0;
+static int quantStops = 0; /*conta quantas instrucoes "Stop" tem no programa*/
 static int erroCompilacao = 0;/*flag que define se a tabela de simbolos deve ser construida*/
 
 void adicionaSimbolo(Simbolo sim) {
@@ -170,11 +171,12 @@ int separaTokens(FILE *fp, char tokens[10][50]) {
   i--; /*faz i apontar para ultimo token valido*/
   for(j = 2; j < i; j++) {
     if (strlen(tokens[j]) < 3 && tokens[j][0] == '+') {
-      strcat(tokens[j-1], tokens[j]);
+      strcat(tokens[j-1], tokens[j]); /*concatena o + ao simbolo*/
     }
     if (tokens[j-2][strlen(tokens[j-2])-1] == '+') {
-      strcat(tokens[j-2], tokens[j]);
-      i -= 2;
+      strcat(tokens[j-2], tokens[j]); /*concatena o offset a string "simbolo+"*/
+      strcpy(tokens[j-1], tokens[i]); /*passa o marcador de linha pra posicao onde fica o +*/
+      i -= 2; /*decrementa em 2 o maior indice dessa linha*/
     }
   }
   return i;
@@ -287,10 +289,6 @@ int calculaEspaco(const char tokens[10][50], const char *numLinha, int instPos, 
   return espaco;
 }
 
-int getErroCompilacao(){
-  return erroCompilacao;
-}
-
 void primeiraPassagem(FILE *fp){
 	int i;
 	char rotulo[50];
@@ -362,8 +360,13 @@ char* separaTokenDoOffset(char *token, int *offset){
   
   nome_simbolo = strtok(token, "+");
   aux = strtok(NULL, "+");
-  if(aux) *offset = atoi(aux);
+  if(aux != NULL) *offset = atoi(aux);
+
   return nome_simbolo;
+}
+
+int getErroCompilacao(){
+  return erroCompilacao;
 }
 
 void verificaSecaoAtual(const char tokens[10][50]) {
@@ -375,6 +378,13 @@ void verificaEspacoAlocado(Simbolo simb, int offset, const char *numLinha){
   if(offset > (simb.tam - 1)){
     erroCompilacao = 1;
     printf("Erro! Tentativa de manipulacao de espaco nao alocado. (linha %s)\n", numLinha);
+  }
+}
+
+void verificaStops(){
+  if(quantStops == 0){
+    erroCompilacao = 1;
+    printf("Erro! Nao foi encontrada nenhuma instrucao STOP no programa\n");
   }
 }
 
@@ -487,6 +497,10 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
             if(Lsimb1->simbolo.tipo == VARIAVEL){
               fprintf(fpfinal, "%s %d ", instrucoes[instrucao].opcode, Lsimb1->simbolo.posicao + offset);
             } 
+            else if(Lsimb1->simbolo.tipo == CONSTANTE){
+              erroCompilacao = 1;
+              printf("Erro! Tentativa de mudanca de valor constante (linha %s)\n", numLinha);            
+            } 
             else{
               erroCompilacao = 1;
               printf("Instrucao com operandos de tipos invalidos (linha %s)\n", numLinha);
@@ -498,6 +512,7 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
           }
         } 
         else if(instrucao == 13){ /*STOP*/
+          quantStops++;
           fprintf(fpfinal, "%s ", instrucoes[instrucao].opcode);
         }
       }
@@ -531,4 +546,35 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
       }
     }   
   }
+}
+
+void duasPassagens(char *nomeArquivoIN, char *nomeArquivoOUT){
+  FILE *fpIN, *fpOUT;
+  fpIN = fopen(nomeArquivoIN, "r");
+  if(!fpIN){
+    printf("Erro ao abrir o arquivo!\n");
+    return;
+  }
+  fpOUT = fopen(nomeArquivoOUT, "w");
+  if(!fpOUT){
+    printf("Erro ao abrir o arquivo!\n");
+    return;
+  }
+
+  while (!feof(fpIN)) primeiraPassagem(fpIN);
+  /*imprimeSimbolos();*/
+  rewind(fpIN);
+  while (!feof(fpIN)) segundaPassagem(fpIN, fpOUT);
+  verificaStops();
+
+  esvaziaTabela();
+  fclose(fpIN);
+  fclose(fpOUT);
+
+  if(getErroCompilacao() == 1){
+    remove(nomeArquivoOUT);
+    printf("Devido aos erros detectados, o arquivo objeto nao foi gerado.\n");
+  }
+
+  return;
 }

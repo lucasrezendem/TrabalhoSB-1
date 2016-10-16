@@ -11,7 +11,7 @@ int main(int argc, char const *argv[]) {
     return -1;
   }
   fpfinal = fopen("triangulo.o", "w");
-  if(!fp){
+  if(!fpfinal){
     printf("ERRO AO ABRIR O ARQUIVO!\n");
     return -1;
   }
@@ -20,6 +20,7 @@ int main(int argc, char const *argv[]) {
   imprimeSimbolos();
   rewind(fp);
   while (!feof(fp)) segundaPassagem(fp, fpfinal);
+  verificaStops();
 
   esvaziaTabela();
   fclose(fp);

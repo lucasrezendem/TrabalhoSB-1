@@ -1,16 +1,17 @@
 CC = gcc
-CFLAGS = -Wall -ansi -I.
-DEPS = passagens.h
-OBJ = passagens.o entryPoint.o 
+CFLAGS = -Wall -ansi
+DEPS = passagens.h pre_mcr.h
+OBJ = passagens.o pre_mcr.o montador.o
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-main: $(OBJ)
+montador: $(OBJ)
 	gcc -o $@ $^ $(CFLAGS)
 
 .PHONY: clean
 
 clean:
 	rm -f passagens.o
-	rm -f entryPoint.o
+	rm -f pre_mcr.o
+	rm -f montador.o

@@ -46,13 +46,17 @@ void validaTokens(int i, char tokens[10][50], const char *numLinha, int instPos)
 void validaSecao(const char tokens[10][50], const char *numLinha);
 int getInstPos(const char tokens[10][50], const char *numLinha, int i);
 int calculaEspaco(const char tokens[10][50], const char *numLinha, int instPos, int i);
-int getErroCompilacao();
 
 void primeiraPassagem(FILE *fp);
 
 char* separaTokenDoOffset(char *token, int *offset);
+int getErroCompilacao();
 void verificaSecaoAtual(const char tokens[10][50]);
 void verificaEspacoAlocado(Simbolo simb, int offset, const char *numLinha);
+void verificaStops();
+
 void segundaPassagem(FILE *fp, FILE *fpfinal);
+
+void duasPassagens(char *nomeArquivoIN, char *nomeArquivoOUT);
 
 #endif
