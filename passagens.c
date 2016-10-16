@@ -60,7 +60,7 @@ void adicionaSimbolo(Simbolo sim) {
   }
 }
 
-ListSimbolo *procuraSimbolo(const char *nomeSim) {
+ListSimbolo *procuraSimbolo( char *nomeSim) {
   ListSimbolo *aux = ls;
   while(aux != NULL && strcasecmp(nomeSim, aux->simbolo.nome) != 0) {
     aux = aux->prox;
@@ -112,7 +112,7 @@ void imprimeSimbolos() {
 }
 
 /*retorna a posicao da instrucao no vetor ou valores de erro*/
-int procuraInstrucao(const char *nome, int operandos) {
+int procuraInstrucao( char *nome, int operandos) {
   int i;
   for (i = 0; i < NUM_INSTRUCOES; i++) {
     if (strcasecmp(nome, instrucoes[i].nome) == 0){
@@ -124,7 +124,7 @@ int procuraInstrucao(const char *nome, int operandos) {
   return NAO_ENCONTRADO;
 }
 
-int procuraInstrucaoNom(const char *nome) {
+int procuraInstrucaoNom( char *nome) {
   int i;
   for (i = 0; i < NUM_INSTRUCOES; i++) {
     if (strcasecmp(nome, instrucoes[i].nome) == 0){
@@ -135,7 +135,7 @@ int procuraInstrucaoNom(const char *nome) {
 }
 
 /*retorna a posicao da diretiva no vetor ou valores de erro conforme o erro*/
-int procuraDiretiva(const char *nome, int operandos){
+int procuraDiretiva( char *nome, int operandos){
   int retVal = NAO_ENCONTRADO;
   int i;
   for (i = 0; i < NUM_DIRETIVAS; i++) {
@@ -182,14 +182,14 @@ int separaTokens(FILE *fp, char tokens[10][50]) {
   return i;
 }
 
-void getNumLinha(char *dest, const char *token) {
+void getNumLinha(char *dest,  char *token) {
   if (strchr(token, '(')){
     strcpy(dest,token);
     memmove(dest, dest+1, strlen(dest));
   }
 }
 
-void validaTokens(int i, char tokens[10][50], const char *numLinha, int instPos) {
+void validaTokens(int i, char tokens[10][50],  char *numLinha, int instPos) {
   int k, j, errTok = 0, digito = 0;
   for (k = 0; k < i; k++) {
     if (tokens[k] != NULL){
@@ -214,7 +214,7 @@ void validaTokens(int i, char tokens[10][50], const char *numLinha, int instPos)
   }
 }
 
-void validaSecao(const char tokens[10][50], const char *numLinha) {
+void validaSecao( char tokens[10][50],  char *numLinha) {
   /*verifica se a secao eh valida*/
   if (strcasecmp(tokens[0], "section") == 0 && !(strcasecmp(tokens[1], "data") == 0 || strcasecmp(tokens[1], "text") == 0)){
     erroCompilacao = 1;
@@ -233,7 +233,7 @@ void validaSecao(const char tokens[10][50], const char *numLinha) {
   }
 }
 
-int getInstPos(const char tokens[10][50], const char *numLinha, int i, int passagem) {
+int getInstPos( char tokens[10][50],  char *numLinha, int i, int passagem) {
   int instPos = 0, k;
   if (strchr(tokens[0], ':') != NULL) {
     for (k = 1; k < i + 1; k++) {
@@ -250,7 +250,7 @@ int getInstPos(const char tokens[10][50], const char *numLinha, int i, int passa
   return instPos;
 }
 
-int calculaEspaco(const char tokens[10][50], const char *numLinha, int instPos, int i) {
+int calculaEspaco( char tokens[10][50],  char *numLinha, int instPos, int i) {
   int instrucao = -4, diretiva = -4, espaco = 0, j = 0, errVal = 0;
   int expParams = i - instPos - 1;
 
@@ -385,12 +385,12 @@ int getErroCompilacao(){
   return erroCompilacao;
 }
 
-void verificaSecaoAtual(const char tokens[10][50]) {
+void verificaSecaoAtual( char tokens[10][50]) {
   if (strcasecmp(tokens[0], "section") == 0 && strcasecmp(tokens[1], "text") == 0) secText = 1;
   else if (strcasecmp(tokens[0], "section") == 0 && strcasecmp(tokens[1], "data") == 0) secText = 0;
 }
 
-void verificaEspacoAlocado(Simbolo simb, int offset, const char *numLinha){
+void verificaEspacoAlocado(Simbolo simb, int offset,  char *numLinha){
   if(offset > (simb.tam - 1) && simb.tipo == VARIAVEL){
     erroCompilacao = 1;
     printf("\nERRO >> erro semântico detectado na linha: %s (Tentativa de manipulacao de espaco nao alocado.)\n", numLinha);

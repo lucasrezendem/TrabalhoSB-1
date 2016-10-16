@@ -333,6 +333,33 @@ int troca (FILE *fp,int val, char c,char aux[50], listMcr *lis){ /*troca paramet
 		}
 return 0;
 }
+void ArrumaParametro (listMcr *parametros, char *nome2, int post){
+	char c='a', palavra[50];
+	
+	FILE *fp = fopen(nome2, "r+");
+	if (!fp){
+		printf("Erro ao abrir arquivo");
+		exit(1);
+	}
+	fseek(fp,post,SEEK_SET);
+	while (c!=EOF){
+		c = fgetc(fp);
+		fscanf(fp,"%s",palavra);
+		if(palavra[0]=='&'){
+			fseek(fp,-strlen(palavra),SEEK_CUR);
+			troca (fp, ftell(fp),' ',palavra,parametros);
+			strcpy(palavra,"");
+		}
+	}
+	fclose(fp);
+}
+
+
+
+
+
+
+
 
 int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){ /*checa se é uma macro e procura a definição da mesma*/
 	long int val=0;
@@ -351,7 +378,6 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){ /*chec
 			printf("Erro ao abrir arquivo");
 			return -1;
 		}
-			getchar();
 		do{
 			c = fgetc(fp_pre);
 			if (c!=EOF){
@@ -434,12 +460,13 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){ /*chec
 						
 						if(strcmp(aux,"endmacro")==0)
 								break;
-						resultado = troca (fp_mcr, ftell(fp_mcr),c,aux,parametros);
+						resultado = troca (fp_mcr, ftell(fp_mcr),c,aux,parametros); /*arruma nome dos parametros*/
 						if(resultado==1 && aux[0]!='('){
 							fseek(fp_mcr,1,SEEK_CUR);
 							resulaux = checaMacro(aux, nome, nome2, ftell(fp_mcr), ftell(fp_pre));
 							resultado = 0;
 						}
+						ArrumaParametro (parametros, nome2, ftell(fp_mcr));
 						if(resulaux!=0 && aux[0]!='('){
 							fseek(fp_mcr,resulaux,SEEK_SET);
 							strcpy(aux,"");
@@ -776,7 +803,6 @@ void secaoDir (char *nome){
 			text = 0;
 			data = 1;
 		}
-		/*printf("\n%s", palavra);*/
 		if(strcmp(palavra,"equ")==0 && (text!=0 || data!=0)){
 
 			while(c!='('){
