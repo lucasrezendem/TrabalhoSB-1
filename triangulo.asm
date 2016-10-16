@@ -4,14 +4,14 @@ swap2: macro &1, &2, &3
 	mult &2, &2		
 	store &3, &3 		
 	input &2, &1		
-	end macro		
+	endmacro		
 		
 swap: macro &a, &b, &t		
 	copy &a, &t		
 	copy &b, &a		
 	swap2 teste1, teste2, teste3 		
 	copy &t, &b		
-	end macro		
+	endmacro		
 		
 SECTION TEXT		
 		INPUT		B		
