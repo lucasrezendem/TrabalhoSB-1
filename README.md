@@ -12,6 +12,8 @@ Lucas Rezende de Macedo - 14/0026363
 
 ## Instrucoes de Compilacao
 
+Compilado em linux (Ubuntu e Arch)
+
 Para compilar o montador:
 * abra o diretorio raiz do arquivo
 * digite "make"
