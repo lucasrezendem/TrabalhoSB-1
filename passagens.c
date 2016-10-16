@@ -193,7 +193,7 @@ void validaTokens(int i, char tokens[10][50], const char *numLinha, int instPos)
   int k, j, errTok = 0;
   for (k = 0; k < i; k++) {
     if (tokens[k] != NULL){
-      if (!isalpha(tokens[k][0]) && tokens[k][0] != '_' && (strlen(tokens[k]) == 1 && k < instPos)) {
+      if (!isalpha(tokens[k][0]) && tokens[k][0] != '_' && strlen(tokens[k]) != 1 ) {
         printf("\nERRO >> erro léxico detectado na linha: %s (Token '%s' invalido)\n", numLinha, tokens[k]);
         erroCompilacao = 1;
       }
@@ -251,7 +251,6 @@ int calculaEspaco(const char tokens[10][50], const char *numLinha, int instPos, 
   int expParams = i - instPos - 1;
 
   if (secText == 1 && strcasecmp(tokens[0], "SECTION") != 0 && i != 0) {
-    printf("\t\t\tverifica se a instrucao existe\n");
     instrucao = procuraInstrucaoNom(tokens[instPos]); /*verifica qual eh a instrucao*/
     if (instrucao == NAO_ENCONTRADO){
       erroCompilacao = 1;
@@ -259,11 +258,9 @@ int calculaEspaco(const char tokens[10][50], const char *numLinha, int instPos, 
       else printf("\nERRO >> erro semântico detectado na linha: %s (Instrucao desconhecida: '%s')\n", numLinha, tokens[instPos]);
       return 0;
     } else {
-      printf("\t\t\tatribui o valor do espaco da instrucao\n");
       espaco = instrucoes[instrucao].operandos + 1;
     }
   } else if (secText == 0 && strcasecmp(tokens[0], "SECTION") != 0 && i != 0) {
-    printf("\t\t\tverifica se a diretiva existe\n");
     diretiva = procuraDiretiva(tokens[instPos], expParams);/*verifica se a diretiva eh valida*/
     if (diretiva  < 0 ) {
       erroCompilacao = 1;
@@ -285,22 +282,16 @@ int calculaEspaco(const char tokens[10][50], const char *numLinha, int instPos, 
       return 1;
     }
     else {
-      printf("\t\t\tatribui o valor do espaco da diretiva (diretiva: %d)\n", diretiva);
       espaco = diretivas[diretiva].espaco;
       /*O espaco eh usado diferente para space com parametros, o espaco eh ocupado pelo valor passado como parametro*/
-      printf("\t\t\tverifica space com parametros\n");
       if (strcasecmp(diretivas[diretiva].nome, "SPACE") == 0 && diretivas[diretiva].operandos == 1) {
-        printf("\t\t\tverifica se eh digito\n");
         if (isdigit(tokens[instPos + 1][0])) {
-          printf("\t\t\tparametro de space eh numero\n");
           espaco *= atoi(tokens[instPos + 1]);
         }
-        printf("\t\t\tparametro de space n eh numero\n");
 
       }
     }
   }
-  printf("espaco: %d\n", espaco);
   return espaco;
 }
 
@@ -312,32 +303,25 @@ void primeiraPassagem(FILE *fp){
   int simTipo = 0;
   Simbolo simb;
 
-  printf("\t\tsepara tokens\n");
 	i = separaTokens(fp, tokens);
   /*remove o '(' do indicador de linha*/
   if(i > -1){
-    printf("\t\tpega numero da linha\n");
     getNumLinha(numLinha, tokens[i]);
 
     /*Verifica se a instrucao eh o primeiro ou segundo token*/
-    printf("\t\tpega posicao da instrucao\n");
     instPos = getInstPos(tokens, numLinha, i);
 
     /*verifica se os tokens sao validos*/
-    printf("\t\tvalida tokens\n");
     validaTokens(i, tokens, numLinha, instPos);
 
     /*verifica se a secao eh valida*/
-    printf("\t\tvalida secao\n");
     validaSecao(tokens, numLinha);
 
 
-    printf("\t\tcalcula espaco\n");
     espaco = calculaEspaco(tokens, numLinha, instPos, i);
 
 
     /*Construcao da tabela de simbolos*/
-    printf("\t\tconstroi tabela\n");
     if (strchr(tokens[0], ':') != NULL)  {
       strcpy(rotulo, tokens[0]);
       rotulo[strlen(rotulo)-1] = '\0';
@@ -396,7 +380,7 @@ void verificaSecaoAtual(const char tokens[10][50]) {
 }
 
 void verificaEspacoAlocado(Simbolo simb, int offset, const char *numLinha){
-  if(offset > (simb.tam - 1)){
+  if(offset > (simb.tam - 1) && simb.tipo == VARIAVEL){
     erroCompilacao = 1;
     printf("\nERRO >> erro semântico detectado na linha: %s (Tentativa de manipulacao de espaco nao alocado.)\n", numLinha);
   }
@@ -585,17 +569,12 @@ void duasPassagens(char *nomeArquivoIN, char *nomeArquivoOUT){
     return;
   }
 
-  printf("\tprimeira passagem\n");
   while (!feof(fpIN)) primeiraPassagem(fpIN);
   /*imprimeSimbolos();*/
-  printf("\trewind fp in\n");
   rewind(fpIN);
-  printf("\tsegunda passagem\n");
   while (!feof(fpIN)) segundaPassagem(fpIN, fpOUT);
-  printf("\tverifica stops\n");
   verificaStops();
 
-  printf("\tsesvazia tabela\n");
   esvaziaTabela();
   fclose(fpIN);
   fclose(fpOUT);
