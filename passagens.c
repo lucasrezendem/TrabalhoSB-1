@@ -45,6 +45,7 @@ static int contPos = 0;
 static int secText = 0;
 static int quantStops = 0; /*conta quantas instrucoes "Stop" tem no programa*/
 static int erroCompilacao = 0;/*flag que define se a tabela de simbolos deve ser construida*/
+static int inMacro = 0;
 
 void adicionaSimbolo(Simbolo sim) {
   ListSimbolo *aux = ls;
@@ -251,10 +252,21 @@ int getInstPos( char tokens[10][50],  char *numLinha, int i, int passagem) {
 }
 
 int calculaEspaco( char tokens[10][50],  char *numLinha, int instPos, int i) {
-  int instrucao = -4, diretiva = -4, espaco = 0, j = 0, errVal = 0;
-  int expParams = i - instPos - 1;
+  int instrucao = -4, diretiva = -4, espaco = 0, j = 0, errVal = 0, temLinha = 0;
+  int expParams;
+  
+  if (tokens[i][0] == '(') {
+      inMacro = 0;
+      temLinha = 1;
+    }
+    else {
+        temLinha = 0;
+        if(inMacro == 0) sprintf(numLinha, "%d", atoi(numLinha) + 1);
+        inMacro = 1;
+    }
+    expParams = i - instPos - temLinha;
 
-  if (secText == 1 && strcasecmp(tokens[0], "SECTION") != 0 && i != 0) {
+  if (secText == 1 && strcasecmp(tokens[0], "SECTION") != 0 && i != 0 && tokens[instPos][0] != '(') {
     instrucao = procuraInstrucaoNom(tokens[instPos]); /*verifica qual eh a instrucao*/
     if (instrucao == NAO_ENCONTRADO){
       erroCompilacao = 1;
@@ -264,7 +276,7 @@ int calculaEspaco( char tokens[10][50],  char *numLinha, int instPos, int i) {
     } else {
       espaco = instrucoes[instrucao].operandos + 1;
     }
-  } else if (secText == 0 && strcasecmp(tokens[0], "SECTION") != 0 && i != 0) {
+  } else if (secText == 0 && strcasecmp(tokens[0], "SECTION") != 0 && i != 0 && tokens[instPos][0] != '(') {
     diretiva = procuraDiretiva(tokens[instPos], expParams);/*verifica se a diretiva eh valida*/
     if (diretiva  < 0 ) {
       erroCompilacao = 1;
@@ -405,7 +417,7 @@ void verificaStops(){
 }
 
 void segundaPassagem(FILE *fp, FILE *fpfinal){
-  int i, j; /*i eh o maior indice do vetor de tokens da linha dada*/
+  int i, j, temLinha = 0; /*i eh o maior indice do vetor de tokens da linha dada*/
   char *rotulo;
   char tokens[10][50], numLinha[10];
   int instrucao, diretiva, expParams, instPos = 0, offset = 0, offset2 = 0, operando = 0; /*o operando so eh usado no space e no const*/
@@ -424,7 +436,16 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
     verificaSecaoAtual(tokens);
 
     /*Calcula a quantidade de operandos*/
-    expParams = i - instPos - 1;
+    if (tokens[i][0] == '(') {
+      inMacro = 0;
+      temLinha = 1;
+    }
+    else {
+        temLinha = 0;
+        if(inMacro == 0) sprintf(numLinha, "%d", atoi(numLinha) + 1);
+        inMacro = 1;
+    }
+    expParams = i - instPos - temLinha;
 
     if (secText == 1 && strcasecmp(tokens[0], "SECTION") != 0 && i != 0) { /*Se for uma instrucao...*/
       instrucao = procuraInstrucao(tokens[instPos], expParams); /*verifica se a instrucao eh valida*/
@@ -432,10 +453,10 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
         erroCompilacao = 1;
         switch (instrucao) {
           case EXCESSO_OPERANDOS:
-            printf("\nERRO >> erro sintático detectado na linha: %s (Instrucao com excesso de operandos)\n", numLinha);
+            printf("\nERRO >> erro sintático detectado na linha: %s (Instrucao '%s' com excesso de operandos)\n", numLinha, tokens[instPos]);
             break;
           case FALTA_OPERANDOS:
-            printf("\nERRO >> erro sintático detectado na linha: %s (Instrucao com operandos insuficientes)\n", numLinha);
+            printf("\nERRO >> erro sintático detectado na linha: %s (Instrucao '%s' com operandos insuficientes)\n", numLinha, tokens[instPos]);
             break;
           case NAO_ENCONTRADO:
             /*Nao faz nada, pois o erro ja foi indicado na primeira passagem*/
@@ -583,6 +604,7 @@ void duasPassagens(char *nomeArquivoIN, char *nomeArquivoOUT){
   while (!feof(fpIN)) primeiraPassagem(fpIN);
   /*imprimeSimbolos();*/
   rewind(fpIN);
+  resetInMacro();
   while (!feof(fpIN)) segundaPassagem(fpIN, fpOUT);
   verificaStops();
 
@@ -596,4 +618,8 @@ void duasPassagens(char *nomeArquivoIN, char *nomeArquivoOUT){
   }
 
   return;
+}
+
+void resetInMacro() {
+  inMacro = 0;
 }

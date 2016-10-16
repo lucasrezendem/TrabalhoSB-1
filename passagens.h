@@ -59,4 +59,5 @@ void segundaPassagem(FILE *fp, FILE *fpfinal);
 
 void duasPassagens(char *nomeArquivoIN, char *nomeArquivoOUT);
 
+void resetInMacro();
 #endif
