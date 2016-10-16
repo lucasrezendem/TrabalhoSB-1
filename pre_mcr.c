@@ -782,7 +782,7 @@ void limpa_linhas(char *nome_arquivo){
 
 	for(j=0; j<i; j++){
 		fprintf(fp, "%s\n", programa[j]);
-		printf("%d\n",programa[j][0]);
+		strcpy(programa[j],"");
 	}
 
 	fclose(fp);
@@ -800,7 +800,6 @@ char* preprocessamento(char *nomeArquivoIN, char *nomeArquivoOUT){
 	leAsm(nomeArquivoIN, nomeArquivoOUT_util);
 	limpa_linhas(nomeArquivoIN);
 	arrumaTopoFim(nomeArquivoOUT_util);
-
 	if(nomeArquivoOUT != NULL) limpa_linhas(nomeArquivoOUT_util);
 
 	return nomeArquivoOUT_util;
