@@ -338,7 +338,7 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 	long int val=0;
 	listMcr *parametros = NULL;
 	int tam=0, posM=0, resultado=0, resulaux=0, parDef=0;
-	char aux[50], c='a', b='\0';
+	char aux[50], c='a';
 	if (strcmp(func,"add")!=0 && strcmp(func,"sub")!=0 && strcmp(func,"mult")!=0 && strcmp(func,"div")!=0 && strcmp(func,"jmp")!=0 && strcmp(func,"jmpn")!=0 && strcmp(func,"jmpp")!=0 && strcmp(func,"jmpz")!=0 && strcmp(func,"copy")!=0 && strcmp(func,"load")!=0 && strcmp(func,"store")!=0 && strcmp(func,"input")!=0 && strcmp(func,"output")!=0 && strcmp(func,"stop")!=0&& strcmp(func,"section")!=0&& strcmp(func,"data")!=0&& strcmp(func,"text")!=0 && func[0]!='('){
 	FILE *fp_mcr = fopen (nome2, "r+"); /* .mcr*/
 		if (!fp_mcr){
@@ -362,7 +362,6 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 			}
 
 			fscanf(fp_pre,"%s",aux);
-			getchar();
 			tam = strlen(aux);
 			aux[tam-1]='\0';
 			if(strcmp(aux,func)==0){
@@ -693,7 +692,6 @@ void lePre (char *nome,char *nomeExt){ /* le arquivo .pre e gera .mcr*/
 	while (!feof(fp) || c!=EOF){
 		c='\0';
 		fscanf(fp, "%s", pri);
-		printf( "(((\n%s)))", pri);
 		if ((strcmp(pri,"section")==0)&&begin==0) {
 			begin=1;
 			
@@ -702,7 +700,6 @@ void lePre (char *nome,char *nomeExt){ /* le arquivo .pre e gera .mcr*/
 		
 			if (strcmp(pri,"text")==0) {
 				text=1;
-				printf( ">>>>>>>>>>>\n%s", pri);
 				fseek(fp,-5,SEEK_CUR);
 				strcpy(pri,"");
 			}
@@ -713,10 +710,8 @@ void lePre (char *nome,char *nomeExt){ /* le arquivo .pre e gera .mcr*/
 			c='\0';
 			
 			if(text==1 && pri[0]){
-				getchar();
 				result = checaMacro(pri, nome, nomeExt, ftell(fp1),ftell(fp));
 			}
-			printf( "\n%s(%d)", pri,result);
 			if(result!=0){
 				fseek(fp1,result,SEEK_SET);
 				strcpy(pri,"");
@@ -745,7 +740,6 @@ void lePre (char *nome,char *nomeExt){ /* le arquivo .pre e gera .mcr*/
 		}
 		do{
 			b = fgetc(fp);
-			getchar();
 		}while(c==b);
 		if(b==EOF || c==EOF)
 			break;
