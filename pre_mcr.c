@@ -208,7 +208,7 @@ void colocaLinha (char *nome){ /*insere numero das linhas para detecção de err
 	remove(nome); /*deleta arquivo original*/
 	rename(nomeExt,nome); /*e o substitui pelo novo*/
 }
-void checaAntes (char *nome){
+void checaAntes (char *nome){ /*checa se uma macro não foi chamada antes de ser declarada*/
 	char nomMacro[200], macro[50], c='\0';
 	int tam, result, linha;
 	list *l = NULL;
@@ -219,7 +219,7 @@ void checaAntes (char *nome){
 	}
 	while (c!=EOF){
 		c=fgetc(fp);
-		if(c==':'){
+		if(c==':'){ /*pega informações necessárias sobre a macro se for uma declaração de uma*/
 			
 			while(c!='\n' && c!= ' ' && c!=EOF && ftell(fp)>1){
 				fseek(fp,-2,SEEK_CUR);
@@ -239,7 +239,7 @@ void checaAntes (char *nome){
 	}
 	fseek(fp,0,SEEK_SET);
 	c='\0';
-	 while (c!=EOF){
+	 while (c!=EOF){ /*checa a ordem de chamada e declarações da macro*/
 		c=fgetc(fp);
 		if(c!=EOF){
 			fseek(fp,-1,SEEK_CUR);
@@ -270,8 +270,8 @@ void checaAntes (char *nome){
 
 	free(l);
 }
-void arrumaTopoFim (char *nome){
-	char c,/* b,*/nomeExt[50];
+void arrumaTopoFim (char *nome){ /*arruma linhas a mais no começo ou no final do arquivo*/
+	char c,nomeExt[50];
 	int pode=0, tam;
 	FILE *fp = fopen (nome,"r+");
 	if(!fp){
@@ -305,7 +305,7 @@ void arrumaTopoFim (char *nome){
 	remove(nome); /*deleta arquivo original*/
 	rename(nomeExt,nome); /*e o substitui pelo novo*/
 }
-int troca (FILE *fp,int val, char c,char aux[50], listMcr *lis){
+int troca (FILE *fp,int val, char c,char aux[50], listMcr *lis){ /*troca parametros da macro definida pelos da macro chamada*/
 	listMcr *laux = lis;
 	int teste=0, virg=0;
 	int size = strlen(aux);
@@ -334,7 +334,7 @@ int troca (FILE *fp,int val, char c,char aux[50], listMcr *lis){
 return 0;
 }
 
-int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
+int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){ /*checa se é uma macro e procura a definição da mesma*/
 	long int val=0;
 	listMcr *parametros = NULL;
 	int tam=0, posM=0, resultado=0, resulaux=0, parDef=0, find=0;
@@ -345,13 +345,13 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 			printf("Erro ao abrir arquivo");
 			return -1;
 		}
-		/*fseek(fp_mcr,-strlen(func),SEEK_CUR);*/
 
 		FILE *fp_pre = fopen (nome, "r"); /* .pre*/
 		if (!fp_pre){
 			printf("Erro ao abrir arquivo");
 			return -1;
 		}
+			getchar();
 		do{
 			c = fgetc(fp_pre);
 			if (c!=EOF){
@@ -373,9 +373,6 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 				else{
 					break;
 				}
-
-
-
 				fscanf(fp_pre,"%s",aux);
 				/*pega os parametros com os quais a macro é definida*/
 				while(c!='\n'){
@@ -427,10 +424,7 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 				/* até aqui os parametros da macro chamada e da definida foram pegos*/
 				c = '\0';
 				fseek(fp_pre,posM,SEEK_SET);
-				/*while(c!='\n'){
-					c = fgetc(fp_pre);
-					printf("\n%c;%d\n",c,c);
-				}*/
+
 				/*começa a copiar a macro na section text*/
 				fseek(fp_mcr,pos-1,SEEK_SET);
 				while(c!=EOF && strcmp(aux,"endmacro")!=0){
@@ -467,12 +461,10 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 
 
 		}while (!feof(fp_pre) || c!=EOF);
-		c = '\0';
-		/*while(c!='\n'||c!=EOF){*/
-			/*c = fgetc(fp_pre);
-		}*/
 		if(find==0)
-			printf("ERRO>> Erro semantico detectado. Não foi definido nenhuma macro com esse nome");
+			printf("ERRO >> erro semântico detectado. (Não foi definida uma macro com esse nome)");
+		c = '\0';
+
 		val = ftell(fp_mcr);
 
 		fclose(fp_pre);
@@ -556,7 +548,7 @@ void leAsm (char *nome,char *nomeExt){ /*recebe .asm para gerar .pre*/
 				for(a = 0; palavra[a]; a++){
   					label[a] = tolower(label[a]);
 				}
-
+				
 				result = checaIf (equl, label);
 				if(result!=-1){
 					while(c!='('){
@@ -784,6 +776,7 @@ void secaoDir (char *nome){
 			text = 0;
 			data = 1;
 		}
+		/*printf("\n%s", palavra);*/
 		if(strcmp(palavra,"equ")==0 && (text!=0 || data!=0)){
 
 			while(c!='('){
