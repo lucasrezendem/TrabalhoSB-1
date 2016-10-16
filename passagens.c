@@ -377,14 +377,14 @@ void verificaSecaoAtual(const char tokens[10][50]) {
 void verificaEspacoAlocado(Simbolo simb, int offset, const char *numLinha){
   if(offset > (simb.tam - 1)){
     erroCompilacao = 1;
-    printf("\nERRO >> erro sintático detectado na linha: %s (Tentativa de manipulacao de espaco nao alocado. %s)\n", numLinha);
+    printf("\nERRO >> erro semantico detectado na linha: %s (Tentativa de manipulacao de espaco nao alocado.)\n", numLinha);
   }
 }
 
 void verificaStops(){
   if(quantStops == 0){
     erroCompilacao = 1;
-    printf("\nERRO >> erro sintático detectado na linha: %s (Nao foi encontrada nenhuma instrucao STOP no programa)\n");
+    printf("\nERRO >> erro sintatico detectado (Nao foi encontrada nenhuma instrucao STOP no programa)\n");
   }
 }
 
