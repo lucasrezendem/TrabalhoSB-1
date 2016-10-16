@@ -10,23 +10,29 @@ int main(int argc, char *argv[]){
 	if(argc > 4){
 		printf("ERRO: ARGUMENTOS EM EXCESSO! DIGA SOMENTE O TIPO DE OPERACAO, O ARQUIVO DE ENTRADA E O ARQUIVO DE SAIDA.\n");
 		return -1;
-	} 
+	}
 	else if(argc < 4){
 		printf("ERRO: FALTAM ARGUMENTOS! DIGA O TIPO DE OPERACAO, O ARQUIVO DE ENTRADA E O ARQUIVO DE SAIDA.\n");
 		return -1;
-	} 
+	}
 
 
 	if(!strcmp(argv[1], "-p")){ /*Operacao de preprocessamento selecionada*/
+		printf("preprocessamento\n");
 		aux = preprocessamento(argv[2], argv[3]);
-	} 
+	}
 	else if(!strcmp(argv[1], "-m")){ /*Operacao de expansao de macro selecionada*/
+		printf("preprocessamento\n");
 		aux = preprocessamento(argv[2], NULL);
+		printf("expansao de macros\n");
 		aux = expansaoDeMacros(aux, argv[3]);
 	}
 	else if(!strcmp(argv[1], "-o")){ /*Operacao de montagem completa selecionada*/
+		printf("preprocessamento\n");
 		aux = preprocessamento(argv[2], NULL);
+		printf("expansao de macros\n");
 		aux = expansaoDeMacros(aux, NULL);
+		printf("compilacao\n");
 		duasPassagens(aux, argv[3]);
 	}
 	else{

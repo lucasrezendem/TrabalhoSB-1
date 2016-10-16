@@ -251,14 +251,19 @@ int calculaEspaco(const char tokens[10][50], const char *numLinha, int instPos, 
   int expParams = i - instPos - 1;
 
   if (secText == 1 && strcasecmp(tokens[0], "SECTION") != 0 && i != 0) {
+    printf("\t\t\tverifica se a instrucao existe\n");
     instrucao = procuraInstrucaoNom(tokens[instPos]); /*verifica qual eh a instrucao*/
     if (instrucao == NAO_ENCONTRADO){
       erroCompilacao = 1;
       if (procuraDiretiva(tokens[instPos], expParams) != NAO_ENCONTRADO) printf("\nERRO >> erro semântico detectado na linha: %s (Diretiva '%s' na secao de texto)\n", numLinha, tokens[instPos]);
       else printf("\nERRO >> erro semântico detectado na linha: %s (Instrucao desconhecida: '%s')\n", numLinha, tokens[instPos]);
       return 0;
-    } else espaco = instrucoes[instrucao].operandos + 1;
+    } else {
+      printf("\t\t\tatribui o valor do espaco da instrucao\n");
+      espaco = instrucoes[instrucao].operandos + 1;
+    }
   } else if (secText == 0 && strcasecmp(tokens[0], "SECTION") != 0 && i != 0) {
+    printf("\t\t\tverifica se a diretiva existe\n");
     diretiva = procuraDiretiva(tokens[instPos], expParams);/*verifica se a diretiva eh valida*/
     if (diretiva  < 0 ) {
       erroCompilacao = 1;
@@ -280,12 +285,22 @@ int calculaEspaco(const char tokens[10][50], const char *numLinha, int instPos, 
       return 1;
     }
     else {
+      printf("\t\t\tatribui o valor do espaco da diretiva (diretiva: %d)\n", diretiva);
       espaco = diretivas[diretiva].espaco;
       /*O espaco eh usado diferente para space com parametros, o espaco eh ocupado pelo valor passado como parametro*/
-      if (strcasecmp(diretivas[diretiva].nome, "SPACE") == 0 && diretivas[diretiva].operandos == 1)
-        espaco *= atoi(tokens[instPos + 1]);
+      printf("\t\t\tverifica space com parametros\n");
+      if (strcasecmp(diretivas[diretiva].nome, "SPACE") == 0 && diretivas[diretiva].operandos == 1) {
+        printf("\t\t\tverifica se eh digito\n");
+        if (isdigit(tokens[instPos + 1][0])) {
+          printf("\t\t\tparametro de space eh numero\n");
+          espaco *= atoi(tokens[instPos + 1]);
+        }
+        printf("\t\t\tparametro de space n eh numero\n");
+
+      }
     }
   }
+  printf("espaco: %d\n", espaco);
   return espaco;
 }
 
@@ -297,26 +312,32 @@ void primeiraPassagem(FILE *fp){
   int simTipo = 0;
   Simbolo simb;
 
-
+  printf("\t\tsepara tokens\n");
 	i = separaTokens(fp, tokens);
   /*remove o '(' do indicador de linha*/
   if(i > -1){
+    printf("\t\tpega numero da linha\n");
     getNumLinha(numLinha, tokens[i]);
 
     /*Verifica se a instrucao eh o primeiro ou segundo token*/
+    printf("\t\tpega posicao da instrucao\n");
     instPos = getInstPos(tokens, numLinha, i);
 
     /*verifica se os tokens sao validos*/
+    printf("\t\tvalida tokens\n");
     validaTokens(i, tokens, numLinha, instPos);
 
     /*verifica se a secao eh valida*/
+    printf("\t\tvalida secao\n");
     validaSecao(tokens, numLinha);
 
 
+    printf("\t\tcalcula espaco\n");
     espaco = calculaEspaco(tokens, numLinha, instPos, i);
 
 
     /*Construcao da tabela de simbolos*/
+    printf("\t\tconstroi tabela\n");
     if (strchr(tokens[0], ':') != NULL)  {
       strcpy(rotulo, tokens[0]);
       rotulo[strlen(rotulo)-1] = '\0';
@@ -357,7 +378,7 @@ void primeiraPassagem(FILE *fp){
 /*Recebe um token que tem a possibilidade de ter um '+', e o separa entre o nome do simbolo e o offset */
 char* separaTokenDoOffset(char *token, int *offset){
   char *aux, *nome_simbolo;
-  
+
   nome_simbolo = strtok(token, "+");
   aux = strtok(NULL, "+");
   if(aux != NULL) *offset = atoi(aux);
@@ -428,7 +449,7 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
             printf("ERRO DE EXECUCAO! Indice da intrucao(%d), linha(%s).\n", instrucao, numLinha);
             break;
         }
-      } 
+      }
       else { /*ja que o numero de operandos eh valido, resta agora saber se os tipos deles sao validos, para cada instrucao. Se for, gera codigo objeto*/
         if((instrucao >= 0 && instrucao <= 3) || instrucao == 9 || instrucao == 12){ /*ADD, SUB, MULT, DIV, LOAD, OUTPUT*/
           rotulo = separaTokenDoOffset(tokens[instPos+1], &offset);
@@ -437,7 +458,7 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
             verificaEspacoAlocado(Lsimb1->simbolo, offset, numLinha);
             if(Lsimb1->simbolo.tipo == VARIAVEL){
               fprintf(fpfinal, "%s %d ", instrucoes[instrucao].opcode, Lsimb1->simbolo.posicao + offset);
-            } 
+            }
             else if(Lsimb1->simbolo.tipo == CONSTANTE){
               if(instrucao == 3 && Lsimb1->simbolo.valor == 0){ /*verifica se o operando eh uma constante com valor zero*/
                 erroCompilacao = 1;
@@ -454,13 +475,13 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
             erroCompilacao = 1;
             printf("\nERRO >> erro semântico detectado na linha: %s (Simbolo nao definido!)\n", numLinha);
           }
-        } 
+        }
         else if(instrucao >= 4 && instrucao <= 7){ /*JMP, JMPN, JMPP, JMPZ*/
           Lsimb1 = procuraSimbolo(tokens[instPos+1]);
           if(Lsimb1 != NULL){
             if(Lsimb1->simbolo.tipo == LABEL){
               fprintf(fpfinal, "%s %d ", instrucoes[instrucao].opcode, Lsimb1->simbolo.posicao);
-            } 
+            }
             else{
               erroCompilacao = 1;
               printf("\nERRO >> erro semântico detectado na linha: %s (Tentativa de pulo para rotulo com tipo invalido)\n", numLinha);
@@ -470,7 +491,7 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
             erroCompilacao = 1;
                 printf("\nERRO >> erro semântico detectado na linha: %s (Simbolo nao definido!)\n", numLinha);
           }
-        } 
+        }
         else if(instrucao == 8){ /*COPY*/
           rotulo = separaTokenDoOffset(tokens[instPos+1], &offset);
           Lsimb1 = procuraSimbolo(rotulo);
@@ -481,7 +502,7 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
             verificaEspacoAlocado(Lsimb2->simbolo, offset2, numLinha);
             if((Lsimb1->simbolo.tipo == VARIAVEL || Lsimb1->simbolo.tipo == CONSTANTE) && Lsimb2->simbolo.tipo == VARIAVEL){
               fprintf(fpfinal, "%s %d %d ", instrucoes[instrucao].opcode, Lsimb1->simbolo.posicao + offset, Lsimb2->simbolo.posicao + offset2);
-            } 
+            }
             else{
               erroCompilacao = 1;
               printf("\nERRO >> erro semântico detectado na linha: %s (Instrucao com operandos de tipos invalidos)\n", numLinha);
@@ -491,7 +512,7 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
             erroCompilacao = 1;
                 printf("\nERRO >> erro semântico detectado na linha: %s (Simbolo nao definido!)\n", numLinha);
           }
-        } 
+        }
         else if(instrucao == 10 || instrucao == 11){ /*STORE, INPUT*/
           rotulo = separaTokenDoOffset(tokens[instPos+1], &offset);
           Lsimb1 = procuraSimbolo(rotulo);
@@ -499,11 +520,11 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
             verificaEspacoAlocado(Lsimb1->simbolo, offset, numLinha);
             if(Lsimb1->simbolo.tipo == VARIAVEL){
               fprintf(fpfinal, "%s %d ", instrucoes[instrucao].opcode, Lsimb1->simbolo.posicao + offset);
-            } 
+            }
             else if(Lsimb1->simbolo.tipo == CONSTANTE){
               erroCompilacao = 1;
-              printf("\nERRO >> erro semântico detectado na linha: %s (Tentativa de mudanca de valor constante)\n", numLinha);            
-            } 
+              printf("\nERRO >> erro semântico detectado na linha: %s (Tentativa de mudanca de valor constante)\n", numLinha);
+            }
             else{
               erroCompilacao = 1;
               printf("\nERRO >> erro semântico detectado na linha: %s (Instrucao com operandos de tipos invalidos)\n", numLinha);
@@ -513,13 +534,13 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
             erroCompilacao = 1;
                 printf("\nERRO >> erro semântico detectado na linha: %s (Simbolo nao definido!)\n", numLinha);
           }
-        } 
+        }
         else if(instrucao == 13){ /*STOP*/
           quantStops++;
           fprintf(fpfinal, "%s ", instrucoes[instrucao].opcode);
         }
       }
-    } 
+    }
     else if (strcasecmp(tokens[0], "SECTION") != 0 && i != 0) { /*Se for uma diretiva...*/
       diretiva = procuraDiretiva(tokens[instPos], expParams);
       switch (diretiva) {
@@ -527,27 +548,27 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
           fprintf(fpfinal, "0 ");
           break;
         case 3: /*SPACE com argumentos*/
-          if((tokens[instPos+1][0]=='0' && (tokens[instPos+1][1]=='x' || tokens[instPos+1][1]=='X')) || 
+          if((tokens[instPos+1][0]=='0' && (tokens[instPos+1][1]=='x' || tokens[instPos+1][1]=='X')) ||
             (tokens[instPos+1][1]=='0' && (tokens[instPos+1][2]=='x' || tokens[instPos+1][2]=='X'))) /*Se os primeiros caracteres forem 0x ou 0X ou -0x ou -0X, entao le como hexa*/
             sscanf(tokens[instPos+1], "%x", &operando);
           else sscanf(tokens[instPos+1], "%d", &operando); /*senao, le como decimal mesmo*/
           if(operando > 0){
             for(j=0; j<operando; j++) fprintf(fpfinal, "0 ");
-          } 
+          }
           else {
             erroCompilacao = 1;
             printf("\nERRO >> erro semântico detectado na linha: %s (Operando invalido para essa diretiva)\n", numLinha);
           }
           break;
         case 4: /*CONST*/
-          if((tokens[instPos+1][0]=='0' && (tokens[instPos+1][1]=='x' || tokens[instPos+1][1]=='X')) || 
+          if((tokens[instPos+1][0]=='0' && (tokens[instPos+1][1]=='x' || tokens[instPos+1][1]=='X')) ||
             (tokens[instPos+1][1]=='0' && (tokens[instPos+1][2]=='x' || tokens[instPos+1][2]=='X'))) /*Se os primeiros caracteres forem 0x ou 0X ou -0x ou -0X, entao le como hexa*/
             sscanf(tokens[instPos+1], "%x", &operando);
           else sscanf(tokens[instPos+1], "%d", &operando); /*senao, le como decimal mesmo*/
           fprintf(fpfinal, "%d ", operando);
           break;
       }
-    }   
+    }
   }
 }
 
@@ -564,12 +585,17 @@ void duasPassagens(char *nomeArquivoIN, char *nomeArquivoOUT){
     return;
   }
 
+  printf("\tprimeira passagem\n");
   while (!feof(fpIN)) primeiraPassagem(fpIN);
   /*imprimeSimbolos();*/
+  printf("\trewind fp in\n");
   rewind(fpIN);
+  printf("\tsegunda passagem\n");
   while (!feof(fpIN)) segundaPassagem(fpIN, fpOUT);
+  printf("\tverifica stops\n");
   verificaStops();
 
+  printf("\tsesvazia tabela\n");
   esvaziaTabela();
   fclose(fpIN);
   fclose(fpOUT);

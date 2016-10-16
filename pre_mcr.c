@@ -31,10 +31,10 @@ listMcr *addMcr (listMcr *l, char label[50]){
 	if(novo == NULL) exit(0);
 	strcpy(novo->orig,"");
 	strcpy(novo->eq,label);
-	    
+
 	if(aux == NULL){
 		novo->next = NULL;
-		 return novo; 
+		 return novo;
 	}
 	while(aux->next !=NULL){
 		aux=aux->next;
@@ -56,11 +56,11 @@ listMcr *updateMcr (listMcr *l, char label[50]){
 		aux = aux->next;
 	}
 	strcpy(aux->orig,label);
-	
+
 	return l;
 
 }
-	
+
 
 
 typedef struct listAux { /*estrutura que armazena parametros definidos com equ*/
@@ -90,10 +90,10 @@ list *add (list* l, int val, char label[50]){ /*insere valor definido com equ*/
 	if(novo == NULL) exit(0);
 	novo->valor = val;
 	strcpy(novo->nome,label);
-	    
+
 	if(aux == NULL){
 		novo->next = NULL;
-		 return novo; 
+		 return novo;
 	}
 	novo->next = aux;
 return novo;
@@ -109,7 +109,7 @@ int checaIf (list *l, char *nome){
 		for(a = 0; nome[a]; a++){
   				nome[a] = tolower(nome[a]);
 		}
-		
+
 		if (strcmp(aux->nome,nome)==0){/* if foi definido antes.*/
 			return aux->valor;
 		}
@@ -147,10 +147,10 @@ void tiraComentario (char *nome){
 			do{
 				c= fgetc(fp);
 			}while (c!=EOF && c!='\n');
-			
+
 		}
 		fprintf(fp1,"%c",c);
-	
+
 	}
 	fclose(fp);
 	fclose(fp1);
@@ -189,7 +189,7 @@ void colocaLinha (char *nome){ /*insere numero das linhas para detecção de err
 			c=fgetc(fp);
 			if(c==-1){ /*EOF*/
 				break;
-			} 
+			}
 			if(c!='\n')
 				fprintf(fp1,"%c",c);
 		}
@@ -198,7 +198,7 @@ void colocaLinha (char *nome){ /*insere numero das linhas para detecção de err
 		fprintf(fp1,"\t(%d",i);
 		fprintf(fp1,"\n");
 		i++;
-		if(c!=EOF) 
+		if(c!=EOF)
 			c='\0';
 
 	}
@@ -220,22 +220,22 @@ void checaAntes (char *nome){
 	while (c!=EOF){
 		c=fgetc(fp);
 		if(c==':'){
-			while(c!='\n' && c!=EOF && ftell(fp)>1){
+			while(c!='\n' && c!= ' ' && c!=EOF && ftell(fp)>1){
 				fseek(fp,-2,SEEK_CUR);
 				c=fgetc(fp);
 			}
 			fscanf(fp,"%s",nomMacro);
-			
+
 			tam = strlen(nomMacro);
 			nomMacro[tam-1]='\0';
 			fscanf(fp,"%s",macro);
-			
+
 			if(strcmp(macro,"macro")==0){
 				l = add (l, ftell(fp), nomMacro);
-			
+
 			}
 		}
-		
+
 	}
 	fseek(fp,0,SEEK_SET);
 	c='\0';
@@ -259,12 +259,12 @@ void checaAntes (char *nome){
 					c='\0';
 					fscanf(fp,"%d", &linha);
 					printf("\nERRO >> erro semantico detectado na linha: %d (Você não pode chamar uma macro antes de definir a mesma)", linha);
-					
+
 				}
-				
+
 			}
 		}
-		
+
 	}
 	fclose(fp);
 
@@ -278,7 +278,7 @@ void arrumaTopoFim (char *nome){
 		printf("erro ao abrir arquivo");
 		exit(1);
 	}
-	
+
 	tam = strlen (nome);
 	strcpy(nomeExt, nome);
 	nomeExt[tam-4]='\0';
@@ -294,7 +294,7 @@ void arrumaTopoFim (char *nome){
 		c=fgetc(fp);
 		if(c>58 && c<123)
 			pode = 1;
-		if(pode==1 && c!=EOF){ 
+		if(pode==1 && c!=EOF){
 			fprintf(fp1,"%c",c);
 		}
 
@@ -358,7 +358,7 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 			if(c==EOF||c==b){
 				break;
 			}
-			else{	
+			else{
 				fseek(fp1,-2,SEEK_CUR);
 			}
 			fscanf(fp1,"%s",aux);
@@ -388,14 +388,14 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 				while(c!='\n'){
 					c = fgetc(fp1);
 				}
-				
+
 				fseek(fp,pos-1,SEEK_SET);
 				while(c!=EOF && strcmp(aux,"macro")!=0){
 					c = fgetc(fp1);
 					if(c!='\n'){
 						fscanf(fp1,"%s",aux);
 						/*fprintf(fp,"%c%s",c,aux);*/
-						
+
 						if(strcmp(aux,"macro")==0)
 								break;
 						resultado = troca (fp, ftell(fp),c,aux,parametros);
@@ -464,7 +464,7 @@ void leAsm (char *nome,char *nomeExt){ /*recebe .asm para gerar .pre*/
 		printf("Erro ao criar abrir arquivo .pre");
 		exit(1);
 	}
-	
+
 
 	while (c!=EOF){
 		c= fgetc(fp);
@@ -475,7 +475,7 @@ void leAsm (char *nome,char *nomeExt){ /*recebe .asm para gerar .pre*/
 			for(a = 0; palavra[a]; a++){
   				palavra[a] = tolower(palavra[a]);
 			}
-			
+
 			if (strcmp (palavra,"equ")==0){ /*checa se palavra encontrada é diretiva EQU*/
 				fseek(fp1, 0, SEEK_SET);
 				while (c!='\n' && ftell(fp)>1){ /*volta para começo da linha*/
@@ -544,9 +544,9 @@ void leAsm (char *nome,char *nomeExt){ /*recebe .asm para gerar .pre*/
 					valor=0;
 
 				}
-				
+
 				equl = add (equl, valor, label); /*adiciona em uma lista, os valores encontrados dos labels de equ*/
-				
+
 				c='\0';
 				while (c!='\n' && c!=EOF){ /* pulando linha do equ*/
 					c=fgetc(fp);
@@ -576,7 +576,7 @@ void leAsm (char *nome,char *nomeExt){ /*recebe .asm para gerar .pre*/
 					fscanf(fp,"%d", &linha);
 					printf("\nERRO >> erro sintático detectado na linha: %d (Erro na definição da diretiva IF)", linha);
 				}
-			
+
 				resposta = checaIf (equl, palavra);
 				while (c!='\n'&& c!=EOF){
 						fseek(fp1, -2, SEEK_CUR);
@@ -618,7 +618,7 @@ void leAsm (char *nome,char *nomeExt){ /*recebe .asm para gerar .pre*/
 				}while(c==b && b!=EOF);
 				fseek(fp, -1 ,SEEK_CUR);
 
-			} 
+			}
 		}
 		else{
 			do{ /*pra ter certeza que vai encontrar o final do arquivo e também tirar alguns espaços, \t ou \n a mais*/
@@ -643,7 +643,7 @@ void lePre (char *nome,char *nomeExt){ /* le arquivo .pre e gera .mcr*/
 		printf("Erro ao abrir arquivo .pre");
 		exit(1);
 	}
-	
+
 
 	FILE *fp1 = fopen (nomeExt, "w+"); /*.mcr*/
 
@@ -651,22 +651,22 @@ void lePre (char *nome,char *nomeExt){ /* le arquivo .pre e gera .mcr*/
 		printf("Erro ao criar abrir arquivo .mcr");
 		exit(1);
 	}
-	
+
 	while (!feof(fp) || c!=EOF){
 		c='\0';
 		fscanf(fp, "%s", pri);
-		
+
 		if ((strcmp(pri,"section")==0)&&begin==0) {
 			begin=1;
 		}
-		
-		
+
+
 		if (begin==1){
 			c='\0';
 			if(text==1){
 				result = checaMacro(pri, nome, nomeExt, ftell(fp1),ftell(fp));
 			}
-			
+
 			if(result!=0){
 				fseek(fp1,result,SEEK_SET);
 				strcpy(pri,"");
@@ -674,7 +674,7 @@ void lePre (char *nome,char *nomeExt){ /* le arquivo .pre e gera .mcr*/
 				while(c!='\n'){
 					c = fgetc(fp);
 				}
-			} 
+			}
 			fprintf(fp1, "%s", pri);
 			if (strcmp(pri,"section")==0 && begin ==1)
 				text=0;
@@ -686,7 +686,7 @@ void lePre (char *nome,char *nomeExt){ /* le arquivo .pre e gera .mcr*/
 			if(c==EOF)
 				break;
 			fseek(fp,-3,SEEK_CUR);
-			
+
 		}
 
 		if (begin==1){
@@ -781,12 +781,12 @@ void limpa_linhas(char *nome_arquivo){
 		programa[i][tam-1]='\0';
 		do{
 			if(feof(fp)) break;
-			aux = fgetc(fp); 
+			aux = fgetc(fp);
 		} while(aux != '\n'); /*esse loop procura por um \n*/
 	}
 
 	if(programa[i-1][0] == 0) i--; /*verifica se o primeiro caracter da ultima linha eh NULL. Se for, decrementa a quantidade de linhas.*/
-	
+
 
 	fclose(fp);
 	fp = fopen(nome_arquivo, "w"); /*agora que eu ja tenho o programa todo num vetor, posso criar um novo arquivo com o mesmo nome, porem limpo*/
