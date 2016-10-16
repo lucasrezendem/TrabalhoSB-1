@@ -127,7 +127,7 @@ void tiraComentario (char *nome){
 	FILE *fp = fopen (nome,"r+"); /*arquivo original*/
 	if(!fp){
 		printf("Erro ao abrir arquivo");
-		return;
+		exit(1);
 	}
 
 	tam = strlen (nome);
@@ -138,7 +138,7 @@ void tiraComentario (char *nome){
 	FILE *fp1 = fopen (nomeExt,"w+"); /*arquivo com o numero das linhas*/
 	if(!fp1){
 		printf("Erro ao abrir arquivo");
-		return;
+		exit(1);
 	}
 
 	while(c!=EOF || !feof(fp)){
@@ -170,7 +170,7 @@ void colocaLinha (char *nome){ /*insere numero das linhas para detecção de err
 	FILE *fp = fopen (nome,"r+"); /*arquivo original*/
 	if(!fp){
 		printf("Erro ao abrir arquivo");
-		return;
+		exit(1);
 	}
 
 	tam = strlen (nome);
@@ -181,7 +181,7 @@ void colocaLinha (char *nome){ /*insere numero das linhas para detecção de err
 	FILE *fp1 = fopen (nomeExt,"w+"); /*arquivo com o numero das linhas*/
 	if(!fp1){
 		printf("Erro ao abrir arquivo");
-		return;
+		exit(1);
 	}
 
 	while(c!=EOF || !feof(fp)){
@@ -215,7 +215,7 @@ void checaAntes (char *nome){
 	FILE *fp = fopen (nome,"r+");
 	if(!fp){
 		printf("Erro ao abrir arquivo");
-		return;
+		exit(1);
 	}
 	while (c!=EOF){
 		c=fgetc(fp);
@@ -276,7 +276,7 @@ void arrumaTopoFim (char *nome){
 	FILE *fp = fopen (nome,"r+");
 	if(!fp){
 		printf("erro ao abrir arquivo");
-		return;
+		exit(1);
 	}
 	
 	tam = strlen (nome);
@@ -287,7 +287,7 @@ void arrumaTopoFim (char *nome){
 	FILE *fp1 = fopen (nomeExt,"w+"); /*arquivo com o numero das linhas*/
 	if(!fp1){
 		printf("Erro ao abrir arquivo");
-		return;
+		exit(1);
 	}
 
 	while(c!=EOF || !feof(fp)){
@@ -455,14 +455,14 @@ void leAsm (char *nome,char *nomeExt){ /*recebe .asm para gerar .pre*/
 	FILE *fp = fopen (nome, "r"); /*.asm*/
 	if(!fp){
 		printf("Erro ao abrir arquivo .asm");
-		return;
+		exit(1);
 	}
 
 	FILE *fp1 = fopen (nomeExt, "w+"); /*.pre*/
 
 	if(!fp1){
 		printf("Erro ao criar abrir arquivo .pre");
-		return;
+		exit(1);
 	}
 	
 
@@ -491,10 +491,25 @@ void leAsm (char *nome,char *nomeExt){ /*recebe .asm para gerar .pre*/
 					fseek(fp1, 2, SEEK_CUR);
 				}
 				fscanf(fp, "%s", label);
+				c=fgetc(fp);
+				c=fgetc(fp);
+				if(c!='\n'){
+					fseek(fp,-2,SEEK_CUR);
+				}
 				fscanf(fp, "%s", palavra); /*pega equ de novo*/
+				c=fgetc(fp);c=fgetc(fp);
+				if(c!='\n'){
+					fseek(fp,-2,SEEK_CUR);
+				}
 				fscanf(fp, "%d", &valor); /* pega valor*/
-
-				
+				if(c=='('){
+					strcpy(palavra,"");
+				}
+				c=fgetc(fp);
+				c=fgetc(fp);
+				if(c!='\n'){
+					fseek(fp,-2,SEEK_CUR);
+				}
 				for(a = 0; palavra[a]; a++){
   					palavra[a] = tolower(palavra[a]);
 				}
@@ -512,7 +527,7 @@ void leAsm (char *nome,char *nomeExt){ /*recebe .asm para gerar .pre*/
 					fscanf(fp,"%d", &linha);
 					printf("\nERRO >> erro semantico detectado na linha: %d (Voce ja definiu algo com esse nome)", linha);
 				}
-				if((label[0]>47 && label[0]<58)||(palavra[0]>47 && palavra[0]<58) || (strcmp(palavra,"equ")!=0)){
+				if(((label[0]>47 && label[0]<58)||(palavra[0]>47 && palavra[0]<58) || (strcmp(palavra,"equ")!=0))){
 					c='\0';
 					while(c!='\n'){
 						c=fgetc(fp);
@@ -626,7 +641,7 @@ void lePre (char *nome,char *nomeExt){ /* le arquivo .pre e gera .mcr*/
 	FILE *fp = fopen (nome, "r"); /*.pre*/
 	if(!fp){
 		printf("Erro ao abrir arquivo .pre");
-		return;
+		exit(1);
 	}
 	
 
@@ -634,7 +649,7 @@ void lePre (char *nome,char *nomeExt){ /* le arquivo .pre e gera .mcr*/
 
 	if(!fp1){
 		printf("Erro ao criar abrir arquivo .mcr");
-		return;
+		exit(1);
 	}
 	
 	while (!feof(fp) || c!=EOF){
@@ -697,7 +712,7 @@ void secaoDir (char *nome){
 	FILE *fp = fopen (nome, "r");
 	if(!fp){
 		printf("Erro ao abrir arquivo");
-		return;
+		exit(1);
 	}
 	while(!feof(fp) && c!=EOF){
 		c=fgetc(fp);
@@ -756,7 +771,7 @@ void limpa_linhas(char *nome_arquivo){
 	fp = fopen(nome_arquivo, "r");
 	if(!fp){
 		printf("ERRO AO ABRIR O ARQUIVO!\n");
-		return;
+		exit(1);
 	}
 
 	for(i=0; i<216 && !feof(fp); i++){
@@ -777,7 +792,7 @@ void limpa_linhas(char *nome_arquivo){
 	fp = fopen(nome_arquivo, "w"); /*agora que eu ja tenho o programa todo num vetor, posso criar um novo arquivo com o mesmo nome, porem limpo*/
 	if(!fp){
 		printf("ERRO AO ABRIR O ARQUIVO!\n");
-		return;
+		exit(1);
 	}
 
 	for(j=0; j<i; j++){
