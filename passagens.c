@@ -254,8 +254,8 @@ int calculaEspaco(const char tokens[10][50], const char *numLinha, int instPos, 
     instrucao = procuraInstrucaoNom(tokens[instPos]); /*verifica qual eh a instrucao*/
     if (instrucao == NAO_ENCONTRADO){
       erroCompilacao = 1;
-      if (procuraDiretiva(tokens[instPos], expParams) != NAO_ENCONTRADO) printf("\nERRO >> erro sintático detectado na linha: %s (Diretiva '%s' na secao de texto)\n", numLinha, tokens[instPos]);
-      else printf("\nERRO >> erro sintático detectado na linha: %s (Instrucao desconhecida: '%s')\n", numLinha, tokens[instPos]);
+      if (procuraDiretiva(tokens[instPos], expParams) != NAO_ENCONTRADO) printf("\nERRO >> erro semântico detectado na linha: %s (Diretiva '%s' na secao de texto)\n", numLinha, tokens[instPos]);
+      else printf("\nERRO >> erro semântico detectado na linha: %s (Instrucao desconhecida: '%s')\n", numLinha, tokens[instPos]);
       return 0;
     } else espaco = instrucoes[instrucao].operandos + 1;
   } else if (secText == 0 && strcasecmp(tokens[0], "SECTION") != 0 && i != 0) {
@@ -264,8 +264,8 @@ int calculaEspaco(const char tokens[10][50], const char *numLinha, int instPos, 
       erroCompilacao = 1;
       switch (diretiva) {
         case NAO_ENCONTRADO:
-          if (procuraInstrucao(tokens[instPos], expParams) != NAO_ENCONTRADO) printf("\nERRO >> erro sintático detectado na linha: %s (Instrucao '%s' na secao de dados)\n", numLinha, tokens[instPos]);
-          else printf("\nERRO >> erro sintático detectado na linha: %s (Diretiva desconhecida: '%s')\n", numLinha, tokens[instPos]);
+          if (procuraInstrucao(tokens[instPos], expParams) != NAO_ENCONTRADO) printf("\nERRO >> erro semântico detectado na linha: %s (Instrucao '%s' na secao errada)\n", numLinha, tokens[instPos]);
+          else printf("\nERRO >> erro semântico detectado na linha: %s (Diretiva desconhecida: '%s')\n", numLinha, tokens[instPos]);
           break;
         case EXCESSO_OPERANDOS:
           printf("\nERRO >> erro sintático detectado na linha: %s (Diretiva com excesso de operandos)\n", numLinha);
@@ -274,10 +274,10 @@ int calculaEspaco(const char tokens[10][50], const char *numLinha, int instPos, 
           printf("\nERRO >> erro sintático detectado na linha: %s (Diretiva com operandos insuficientes)\n", numLinha);
           break;
         default:
-          printf("ERRO DE EXECUCAO\n");
+          printf("ERRO DE EXECUCAO! Indice da diretiva(%d), linha(%s).\n", diretiva, numLinha);
           break;
       }
-      return 0;
+      return 1;
     }
     else {
       espaco = diretivas[diretiva].espaco;
@@ -350,7 +350,7 @@ void primeiraPassagem(FILE *fp){
   }
   else if (secText == 1) {
     erroCompilacao = 1;
-    printf("\nERRO >> erro sintático detectado na linha: %s (Secao de dados ausente).\n", numLinha);
+    printf("\nERRO >> erro semântico detectado na linha: %s (Secao de dados ausente).\n", numLinha);
   }
 }
 
@@ -377,14 +377,14 @@ void verificaSecaoAtual(const char tokens[10][50]) {
 void verificaEspacoAlocado(Simbolo simb, int offset, const char *numLinha){
   if(offset > (simb.tam - 1)){
     erroCompilacao = 1;
-    printf("\nERRO >> erro semantico detectado na linha: %s (Tentativa de manipulacao de espaco nao alocado.)\n", numLinha);
+    printf("\nERRO >> erro semântico detectado na linha: %s (Tentativa de manipulacao de espaco nao alocado.)\n", numLinha);
   }
 }
 
 void verificaStops(){
   if(quantStops == 0){
     erroCompilacao = 1;
-    printf("\nERRO >> erro sintatico detectado (Nao foi encontrada nenhuma instrucao STOP no programa)\n");
+    printf("\nERRO >> erro semântico detectado (Nao foi encontrada nenhuma instrucao STOP no programa)\n");
   }
 }
 
@@ -421,8 +421,11 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
           case FALTA_OPERANDOS:
             printf("\nERRO >> erro sintático detectado na linha: %s (Instrucao com operandos insuficientes)\n", numLinha);
             break;
+          case NAO_ENCONTRADO:
+            /*Nao faz nada, pois o erro ja foi indicado na primeira passagem*/
+            break;
           default:
-            printf("ERRO DE EXECUCAO\n");
+            printf("ERRO DE EXECUCAO! Indice da intrucao(%d), linha(%s).\n", instrucao, numLinha);
             break;
         }
       } 
@@ -444,12 +447,12 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
             }
             else{
                   erroCompilacao = 1;
-                  printf("\nERRO >> erro sintático detectado na linha: %s (Instrucao com operandos de tipos invalidos)\n", numLinha);
+                  printf("\nERRO >> erro semântico detectado na linha: %s (Instrucao com operandos de tipos invalidos)\n", numLinha);
             }
           }
           else{
             erroCompilacao = 1;
-            printf("\nERRO >> erro sintático detectado na linha: %s (Simbolo nao definido!)\n", numLinha);
+            printf("\nERRO >> erro semântico detectado na linha: %s (Simbolo nao definido!)\n", numLinha);
           }
         } 
         else if(instrucao >= 4 && instrucao <= 7){ /*JMP, JMPN, JMPP, JMPZ*/
@@ -460,12 +463,12 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
             } 
             else{
               erroCompilacao = 1;
-              printf("\nERRO >> erro sintático detectado na linha: %s (Instrucao com operandos de tipos invalidos)\n", numLinha);
+              printf("\nERRO >> erro semântico detectado na linha: %s (Tentativa de pulo para rotulo com tipo invalido)\n", numLinha);
             }
           }
           else{
             erroCompilacao = 1;
-                printf("\nERRO >> erro sintático detectado na linha: %s (Simbolo nao definido!)\n", numLinha);
+                printf("\nERRO >> erro semântico detectado na linha: %s (Simbolo nao definido!)\n", numLinha);
           }
         } 
         else if(instrucao == 8){ /*COPY*/
@@ -481,12 +484,12 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
             } 
             else{
               erroCompilacao = 1;
-              printf("\nERRO >> erro sintático detectado na linha: %s (Instrucao com operandos de tipos invalidos)\n", numLinha);
+              printf("\nERRO >> erro semântico detectado na linha: %s (Instrucao com operandos de tipos invalidos)\n", numLinha);
             }
           }
           else{
             erroCompilacao = 1;
-                printf("\nERRO >> erro sintático detectado na linha: %s (Simbolo nao definido!)\n", numLinha);
+                printf("\nERRO >> erro semântico detectado na linha: %s (Simbolo nao definido!)\n", numLinha);
           }
         } 
         else if(instrucao == 10 || instrucao == 11){ /*STORE, INPUT*/
@@ -499,16 +502,16 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
             } 
             else if(Lsimb1->simbolo.tipo == CONSTANTE){
               erroCompilacao = 1;
-              printf("\nERRO >> erro sintático detectado na linha: %s (Tentativa de mudanca de valor constante)\n", numLinha);            
+              printf("\nERRO >> erro semântico detectado na linha: %s (Tentativa de mudanca de valor constante)\n", numLinha);            
             } 
             else{
               erroCompilacao = 1;
-              printf("\nERRO >> erro sintático detectado na linha: %s (Instrucao com operandos de tipos invalidos)\n", numLinha);
+              printf("\nERRO >> erro semântico detectado na linha: %s (Instrucao com operandos de tipos invalidos)\n", numLinha);
             }
           }
           else{
             erroCompilacao = 1;
-                printf("\nERRO >> erro sintático detectado na linha: %s (Simbolo nao definido!)\n", numLinha);
+                printf("\nERRO >> erro semântico detectado na linha: %s (Simbolo nao definido!)\n", numLinha);
           }
         } 
         else if(instrucao == 13){ /*STOP*/
@@ -533,7 +536,7 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
           } 
           else {
             erroCompilacao = 1;
-            printf("\nERRO >> erro sintático detectado na linha: %s (Operando invalido para essa diretiva)\n", numLinha);
+            printf("\nERRO >> erro semântico detectado na linha: %s (Operando invalido para essa diretiva)\n", numLinha);
           }
           break;
         case 4: /*CONST*/
