@@ -73,11 +73,11 @@ typedef struct listAux { /*estrutura que armazena parametros definidos com equ*/
 void libera (list* aux1){
 list *aux2 = aux1;
 
-   do {
+   while (aux1 != NULL){
        aux2 = aux1->next;
        free(aux1);
 	aux1=aux2;
-    }while (aux1 != NULL);
+    }
 
 }
 
@@ -782,6 +782,7 @@ void limpa_linhas(char *nome_arquivo){
 
 	for(j=0; j<i; j++){
 		fprintf(fp, "%s\n", programa[j]);
+		printf("%d\n",programa[j][0]);
 	}
 
 	fclose(fp);
