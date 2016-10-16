@@ -219,9 +219,9 @@ void checaAntes (char *nome){
 	}
 	while (c!=EOF){
 		c=fgetc(fp);
-		if(c==':' && c!=' '){
+		if(c==':'){
 			
-			while(c!='\n' && c!=EOF && ftell(fp)>1){
+			while(c!='\n' && c!= ' ' && c!=EOF && ftell(fp)>1){
 				fseek(fp,-2,SEEK_CUR);
 				c=fgetc(fp);
 			}
@@ -337,7 +337,7 @@ return 0;
 int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 	long int val=0;
 	listMcr *parametros = NULL;
-	int tam=0, posM=0, resultado=0, resulaux=0, parDef=0;
+	int tam=0, posM=0, resultado=0, resulaux=0, parDef=0, find=0;
 	char aux[50], c='a';
 	if (strcmp(func,"add")!=0 && strcmp(func,"sub")!=0 && strcmp(func,"mult")!=0 && strcmp(func,"div")!=0 && strcmp(func,"jmp")!=0 && strcmp(func,"jmpn")!=0 && strcmp(func,"jmpp")!=0 && strcmp(func,"jmpz")!=0 && strcmp(func,"copy")!=0 && strcmp(func,"load")!=0 && strcmp(func,"store")!=0 && strcmp(func,"input")!=0 && strcmp(func,"output")!=0 && strcmp(func,"stop")!=0&& strcmp(func,"section")!=0&& strcmp(func,"data")!=0&& strcmp(func,"text")!=0 && func[0]!='('){
 	FILE *fp_mcr = fopen (nome2, "r+"); /* .mcr*/
@@ -365,7 +365,7 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 			tam = strlen(aux);
 			aux[tam-1]='\0';
 			if(strcmp(aux,func)==0){
-
+				find=1;
 				c = fgetc(fp_pre);
 				if (c!=EOF){
 					fseek(fp_pre,-1,SEEK_CUR);
@@ -471,6 +471,8 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 		/*while(c!='\n'||c!=EOF){*/
 			/*c = fgetc(fp_pre);
 		}*/
+		if(find==0)
+			printf("ERRO>> Erro semantico detectado. Não foi definido nenhuma macro com esse nome");
 		val = ftell(fp_mcr);
 
 		fclose(fp_pre);
@@ -479,8 +481,9 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 		return val;
 
 	}
-	else
+	else{
 		return 0;
+	}
 
 
 }
@@ -553,7 +556,6 @@ void leAsm (char *nome,char *nomeExt){ /*recebe .asm para gerar .pre*/
 				for(a = 0; palavra[a]; a++){
   					label[a] = tolower(label[a]);
 				}
-
 
 				result = checaIf (equl, label);
 				if(result!=-1){
