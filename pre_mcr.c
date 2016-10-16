@@ -449,7 +449,7 @@ int checaMacro(char *func, char *nome, char *nome2, int pos, int pospre){
 }
 
 void leAsm (char *nome,char *nomeExt){ /*recebe .asm para gerar .pre*/
-	char palavra[50], b, c, label[50];
+	char palavra[50], b, c='a', label[50];
 	int a ,valor, resposta, linha, result;
 	list *equl = NULL;
 	FILE *fp = fopen (nome, "r"); /*.asm*/
