@@ -17,14 +17,14 @@ int main(int argc, char *argv[]){
 	} 
 
 
-	if(!strcmp(argv[1], "-p")){
+	if(!strcmp(argv[1], "-p")){ /*Operacao de preprocessamento selecionada*/
 		aux = preprocessamento(argv[2], argv[3]);
 	} 
-	else if(!strcmp(argv[1], "-m")){
+	else if(!strcmp(argv[1], "-m")){ /*Operacao de expansao de macro selecionada*/
 		aux = preprocessamento(argv[2], NULL);
 		aux = expansaoDeMacros(aux, argv[3]);
 	}
-	else if(!strcmp(argv[1], "-o")){
+	else if(!strcmp(argv[1], "-o")){ /*Operacao de montagem completa selecionada*/
 		aux = preprocessamento(argv[2], NULL);
 		aux = expansaoDeMacros(aux, NULL);
 		duasPassagens(aux, argv[3]);

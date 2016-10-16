@@ -770,6 +770,9 @@ void limpa_linhas(char *nome_arquivo){
 		} while(aux != '\n'); /*esse loop procura por um \n*/
 	}
 
+	if(programa[i-1][0] == 0) i--; /*verifica se o primeiro caracter da ultima linha eh NULL. Se for, decrementa a quantidade de linhas.*/
+	
+
 	fclose(fp);
 	fp = fopen(nome_arquivo, "w"); /*agora que eu ja tenho o programa todo num vetor, posso criar um novo arquivo com o mesmo nome, porem limpo*/
 	if(!fp){
