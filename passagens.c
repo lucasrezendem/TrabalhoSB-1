@@ -60,7 +60,7 @@ void adicionaSimbolo(Simbolo sim) {
   }
 }
 
-ListSimbolo *procuraSimbolo(const char *nomeSim) {
+ListSimbolo *procuraSimbolo( char *nomeSim) {
   ListSimbolo *aux = ls;
   while(aux != NULL && strcasecmp(nomeSim, aux->simbolo.nome) != 0) {
     aux = aux->prox;
@@ -112,7 +112,7 @@ void imprimeSimbolos() {
 }
 
 /*retorna a posicao da instrucao no vetor ou valores de erro*/
-int procuraInstrucao(const char *nome, int operandos) {
+int procuraInstrucao( char *nome, int operandos) {
   int i;
   for (i = 0; i < NUM_INSTRUCOES; i++) {
     if (strcasecmp(nome, instrucoes[i].nome) == 0){
@@ -124,7 +124,7 @@ int procuraInstrucao(const char *nome, int operandos) {
   return NAO_ENCONTRADO;
 }
 
-int procuraInstrucaoNom(const char *nome) {
+int procuraInstrucaoNom( char *nome) {
   int i;
   for (i = 0; i < NUM_INSTRUCOES; i++) {
     if (strcasecmp(nome, instrucoes[i].nome) == 0){
@@ -135,7 +135,7 @@ int procuraInstrucaoNom(const char *nome) {
 }
 
 /*retorna a posicao da diretiva no vetor ou valores de erro conforme o erro*/
-int procuraDiretiva(const char *nome, int operandos){
+int procuraDiretiva( char *nome, int operandos){
   int retVal = NAO_ENCONTRADO;
   int i;
   for (i = 0; i < NUM_DIRETIVAS; i++) {
@@ -165,7 +165,7 @@ int separaTokens(FILE *fp, char tokens[10][50]) {
 	strcpy(tokens[0], aux);
 	for(i=1; i<NUM_TOKENS; i++){
 		aux = strtok(NULL, " ,\t");
-		if(aux == NULL) break; /*se a linha ja tiver acabado, antes de completar os 5 elementos, acaba com o loop*/
+		if(aux == NULL) break; /*se a linha ja tiver acabado, antes de completar os 10 elementos, acaba com o loop*/
 		strcpy(tokens[i], aux);
 	}
   i--; /*faz i apontar para ultimo token valido*/
@@ -182,27 +182,29 @@ int separaTokens(FILE *fp, char tokens[10][50]) {
   return i;
 }
 
-void getNumLinha(char *dest, const char *token) {
+void getNumLinha(char *dest,  char *token) {
   if (strchr(token, '(')){
     strcpy(dest,token);
     memmove(dest, dest+1, strlen(dest));
   }
 }
 
-void validaTokens(int i, char tokens[10][50], const char *numLinha, int instPos) {
-  int k, j, errTok = 0;
+void validaTokens(int i, char tokens[10][50],  char *numLinha, int instPos) {
+  int k, j, errTok = 0, digito = 0;
   for (k = 0; k < i; k++) {
     if (tokens[k] != NULL){
-      if (!isalpha(tokens[k][0]) && tokens[k][0] != '_' && (strlen(tokens[k]) == 1 && k < instPos)) {
+      if (!isalnum(tokens[k][0]) && tokens[k][0] != '_') {
         printf("\nERRO >> erro léxico detectado na linha: %s (Token '%s' invalido)\n", numLinha, tokens[k]);
         erroCompilacao = 1;
       }
+      if (isdigit(tokens[k][0])) digito = 1;
       for (j = 1; j < strlen(tokens[k]); j++) {
         if (!isalnum(tokens[k][j]) && tokens[k][j] != '_') {
-          if (!(j == strlen(tokens[k]) - 1 && (tokens[k][j] == ':' && k == 0)) && !(tokens[k][j] == '+' && isdigit(tokens[k][j+1]) && isalpha(tokens[k][j-1]))){
+          if (!(j == strlen(tokens[k]) - 1 && (tokens[k][j] == ':')) && !(tokens[k][j] == '+' && isdigit(tokens[k][j+1]) && isalpha(tokens[k][j-1]))){
             errTok = 1;
           }
         }
+        if (isalpha(tokens[k][j]) && digito == 1) errTok = 1;
       }
       if (errTok == 1) {
         printf("\nERRO >> erro léxico detectado na linha: %s (Token '%s' invalido)\n", numLinha, tokens[k]);
@@ -212,7 +214,7 @@ void validaTokens(int i, char tokens[10][50], const char *numLinha, int instPos)
   }
 }
 
-void validaSecao(const char tokens[10][50], const char *numLinha) {
+void validaSecao( char tokens[10][50],  char *numLinha) {
   /*verifica se a secao eh valida*/
   if (strcasecmp(tokens[0], "section") == 0 && !(strcasecmp(tokens[1], "data") == 0 || strcasecmp(tokens[1], "text") == 0)){
     erroCompilacao = 1;
@@ -231,13 +233,15 @@ void validaSecao(const char tokens[10][50], const char *numLinha) {
   }
 }
 
-int getInstPos(const char tokens[10][50], const char *numLinha, int i) {
+int getInstPos( char tokens[10][50],  char *numLinha, int i, int passagem) {
   int instPos = 0, k;
   if (strchr(tokens[0], ':') != NULL) {
     for (k = 1; k < i + 1; k++) {
       if (strchr(tokens[k], ':') != NULL) {
-        erroCompilacao = 1;
-        printf("\nERRO >> erro sintático detectado na linha: %s (Dois labels declarados na mesma linha)\n", numLinha);
+        if (passagem == 1){
+          erroCompilacao = 1;
+          printf("\nERRO >> erro sintático detectado na linha: %s (Dois labels declarados na mesma linha)\n", numLinha);
+        }
         return (k == 1 ? 2 : 1);
       }
     }
@@ -246,26 +250,28 @@ int getInstPos(const char tokens[10][50], const char *numLinha, int i) {
   return instPos;
 }
 
-int calculaEspaco(const char tokens[10][50], const char *numLinha, int instPos, int i) {
-  int instrucao = -4, diretiva = -4, espaco = 0;
+int calculaEspaco( char tokens[10][50],  char *numLinha, int instPos, int i) {
+  int instrucao = -4, diretiva = -4, espaco = 0, j = 0, errVal = 0;
   int expParams = i - instPos - 1;
 
   if (secText == 1 && strcasecmp(tokens[0], "SECTION") != 0 && i != 0) {
     instrucao = procuraInstrucaoNom(tokens[instPos]); /*verifica qual eh a instrucao*/
     if (instrucao == NAO_ENCONTRADO){
       erroCompilacao = 1;
-      if (procuraDiretiva(tokens[instPos], expParams) != NAO_ENCONTRADO) printf("\nERRO >> erro sintático detectado na linha: %s (Diretiva '%s' na secao de texto)\n", numLinha, tokens[instPos]);
-      else printf("\nERRO >> erro sintático detectado na linha: %s (Instrucao desconhecida: '%s')\n", numLinha, tokens[instPos]);
+      if (procuraDiretiva(tokens[instPos], expParams) != NAO_ENCONTRADO) printf("\nERRO >> erro semântico detectado na linha: %s (Diretiva '%s' na secao de texto)\n", numLinha, tokens[instPos]);
+      else printf("\nERRO >> erro semântico detectado na linha: %s (Instrucao desconhecida: '%s')\n", numLinha, tokens[instPos]);
       return 0;
-    } else espaco = instrucoes[instrucao].operandos + 1;
+    } else {
+      espaco = instrucoes[instrucao].operandos + 1;
+    }
   } else if (secText == 0 && strcasecmp(tokens[0], "SECTION") != 0 && i != 0) {
     diretiva = procuraDiretiva(tokens[instPos], expParams);/*verifica se a diretiva eh valida*/
     if (diretiva  < 0 ) {
       erroCompilacao = 1;
       switch (diretiva) {
         case NAO_ENCONTRADO:
-          if (procuraInstrucao(tokens[instPos], expParams) != NAO_ENCONTRADO) printf("\nERRO >> erro sintático detectado na linha: %s (Instrucao '%s' na secao de dados)\n", numLinha, tokens[instPos]);
-          else printf("\nERRO >> erro sintático detectado na linha: %s (Diretiva desconhecida: '%s')\n", numLinha, tokens[instPos]);
+          if (procuraInstrucao(tokens[instPos], expParams) != NAO_ENCONTRADO) printf("\nERRO >> erro semântico detectado na linha: %s (Instrucao '%s' na secao errada)\n", numLinha, tokens[instPos]);
+          else printf("\nERRO >> erro semântico detectado na linha: %s (Diretiva desconhecida: '%s')\n", numLinha, tokens[instPos]);
           break;
         case EXCESSO_OPERANDOS:
           printf("\nERRO >> erro sintático detectado na linha: %s (Diretiva com excesso de operandos)\n", numLinha);
@@ -274,16 +280,27 @@ int calculaEspaco(const char tokens[10][50], const char *numLinha, int instPos, 
           printf("\nERRO >> erro sintático detectado na linha: %s (Diretiva com operandos insuficientes)\n", numLinha);
           break;
         default:
-          printf("ERRO DE EXECUCAO\n");
+          printf("ERRO DE EXECUCAO! Indice da diretiva(%d), linha(%s).\n", diretiva, numLinha);
           break;
       }
-      return 0;
+      return 1;
     }
     else {
       espaco = diretivas[diretiva].espaco;
       /*O espaco eh usado diferente para space com parametros, o espaco eh ocupado pelo valor passado como parametro*/
-      if (strcasecmp(diretivas[diretiva].nome, "SPACE") == 0 && diretivas[diretiva].operandos == 1)
-        espaco *= atoi(tokens[instPos + 1]);
+      if (strcasecmp(diretivas[diretiva].nome, "SPACE") == 0 && diretivas[diretiva].operandos == 1) {
+        /*verifica se o valor passado como parametro para space eh valido*/
+        for (j = 0; j < strlen(tokens[instPos + 1]); j++) {
+          if (!isdigit(tokens[instPos + 1][j])) {
+            errVal = 1;
+            break;
+          }
+        }
+        if (errVal == 0) {
+          espaco *= atoi(tokens[instPos + 1]);
+        }
+
+      }
     }
   }
   return espaco;
@@ -297,14 +314,13 @@ void primeiraPassagem(FILE *fp){
   int simTipo = 0;
   Simbolo simb;
 
-
 	i = separaTokens(fp, tokens);
   /*remove o '(' do indicador de linha*/
   if(i > -1){
     getNumLinha(numLinha, tokens[i]);
 
     /*Verifica se a instrucao eh o primeiro ou segundo token*/
-    instPos = getInstPos(tokens, numLinha, i);
+    instPos = getInstPos(tokens, numLinha, i, 1);
 
     /*verifica se os tokens sao validos*/
     validaTokens(i, tokens, numLinha, instPos);
@@ -350,14 +366,14 @@ void primeiraPassagem(FILE *fp){
   }
   else if (secText == 1) {
     erroCompilacao = 1;
-    printf("\nERRO >> erro sintático detectado na linha: %s (Secao de dados ausente).\n", numLinha);
+    printf("\nERRO >> erro semântico detectado na linha: %s (Secao de dados ausente).\n", numLinha);
   }
 }
 
 /*Recebe um token que tem a possibilidade de ter um '+', e o separa entre o nome do simbolo e o offset */
 char* separaTokenDoOffset(char *token, int *offset){
   char *aux, *nome_simbolo;
-  
+
   nome_simbolo = strtok(token, "+");
   aux = strtok(NULL, "+");
   if(aux != NULL) *offset = atoi(aux);
@@ -369,22 +385,22 @@ int getErroCompilacao(){
   return erroCompilacao;
 }
 
-void verificaSecaoAtual(const char tokens[10][50]) {
+void verificaSecaoAtual( char tokens[10][50]) {
   if (strcasecmp(tokens[0], "section") == 0 && strcasecmp(tokens[1], "text") == 0) secText = 1;
   else if (strcasecmp(tokens[0], "section") == 0 && strcasecmp(tokens[1], "data") == 0) secText = 0;
 }
 
-void verificaEspacoAlocado(Simbolo simb, int offset, const char *numLinha){
-  if(offset > (simb.tam - 1)){
+void verificaEspacoAlocado(Simbolo simb, int offset,  char *numLinha){
+  if(offset > (simb.tam - 1) && simb.tipo == VARIAVEL){
     erroCompilacao = 1;
-    printf("\nERRO >> erro semantico detectado na linha: %s (Tentativa de manipulacao de espaco nao alocado.)\n", numLinha);
+    printf("\nERRO >> erro semântico detectado na linha: %s (Tentativa de manipulacao de espaco nao alocado.)\n", numLinha);
   }
 }
 
 void verificaStops(){
   if(quantStops == 0){
     erroCompilacao = 1;
-    printf("\nERRO >> erro sintatico detectado (Nao foi encontrada nenhuma instrucao STOP no programa)\n");
+    printf("\nERRO >> erro semântico detectado (Nao foi encontrada nenhuma instrucao STOP no programa)\n");
   }
 }
 
@@ -402,7 +418,7 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
     getNumLinha(numLinha, tokens[i]);
 
     /*Verifica se a instrucao eh o primeiro ou segundo token (ou seja, o indice 0 ou 1 do vetor de tokens)*/
-    instPos = getInstPos(tokens, numLinha, i);
+    instPos = getInstPos(tokens, numLinha, i, 2);
 
     /*checa se a secao atual eh a de texto ou a de dados, modificando a flag secText*/
     verificaSecaoAtual(tokens);
@@ -421,11 +437,14 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
           case FALTA_OPERANDOS:
             printf("\nERRO >> erro sintático detectado na linha: %s (Instrucao com operandos insuficientes)\n", numLinha);
             break;
+          case NAO_ENCONTRADO:
+            /*Nao faz nada, pois o erro ja foi indicado na primeira passagem*/
+            break;
           default:
-            printf("ERRO DE EXECUCAO\n");
+            printf("ERRO DE EXECUCAO! Indice da intrucao(%d), linha(%s).\n", instrucao, numLinha);
             break;
         }
-      } 
+      }
       else { /*ja que o numero de operandos eh valido, resta agora saber se os tipos deles sao validos, para cada instrucao. Se for, gera codigo objeto*/
         if((instrucao >= 0 && instrucao <= 3) || instrucao == 9 || instrucao == 12){ /*ADD, SUB, MULT, DIV, LOAD, OUTPUT*/
           rotulo = separaTokenDoOffset(tokens[instPos+1], &offset);
@@ -434,7 +453,7 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
             verificaEspacoAlocado(Lsimb1->simbolo, offset, numLinha);
             if(Lsimb1->simbolo.tipo == VARIAVEL){
               fprintf(fpfinal, "%s %d ", instrucoes[instrucao].opcode, Lsimb1->simbolo.posicao + offset);
-            } 
+            }
             else if(Lsimb1->simbolo.tipo == CONSTANTE){
               if(instrucao == 3 && Lsimb1->simbolo.valor == 0){ /*verifica se o operando eh uma constante com valor zero*/
                 erroCompilacao = 1;
@@ -444,30 +463,30 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
             }
             else{
                   erroCompilacao = 1;
-                  printf("\nERRO >> erro sintático detectado na linha: %s (Instrucao com operandos de tipos invalidos)\n", numLinha);
+                  printf("\nERRO >> erro semântico detectado na linha: %s (Instrucao com operandos de tipos invalidos)\n", numLinha);
             }
           }
           else{
             erroCompilacao = 1;
-            printf("\nERRO >> erro sintático detectado na linha: %s (Simbolo nao definido!)\n", numLinha);
+            printf("\nERRO >> erro semântico detectado na linha: %s (Simbolo nao definido!)\n", numLinha);
           }
-        } 
+        }
         else if(instrucao >= 4 && instrucao <= 7){ /*JMP, JMPN, JMPP, JMPZ*/
           Lsimb1 = procuraSimbolo(tokens[instPos+1]);
           if(Lsimb1 != NULL){
             if(Lsimb1->simbolo.tipo == LABEL){
               fprintf(fpfinal, "%s %d ", instrucoes[instrucao].opcode, Lsimb1->simbolo.posicao);
-            } 
+            }
             else{
               erroCompilacao = 1;
-              printf("\nERRO >> erro sintático detectado na linha: %s (Instrucao com operandos de tipos invalidos)\n", numLinha);
+              printf("\nERRO >> erro semântico detectado na linha: %s (Tentativa de pulo para rotulo com tipo invalido)\n", numLinha);
             }
           }
           else{
             erroCompilacao = 1;
-                printf("\nERRO >> erro sintático detectado na linha: %s (Simbolo nao definido!)\n", numLinha);
+                printf("\nERRO >> erro semântico detectado na linha: %s (Simbolo nao definido!)\n", numLinha);
           }
-        } 
+        }
         else if(instrucao == 8){ /*COPY*/
           rotulo = separaTokenDoOffset(tokens[instPos+1], &offset);
           Lsimb1 = procuraSimbolo(rotulo);
@@ -478,17 +497,17 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
             verificaEspacoAlocado(Lsimb2->simbolo, offset2, numLinha);
             if((Lsimb1->simbolo.tipo == VARIAVEL || Lsimb1->simbolo.tipo == CONSTANTE) && Lsimb2->simbolo.tipo == VARIAVEL){
               fprintf(fpfinal, "%s %d %d ", instrucoes[instrucao].opcode, Lsimb1->simbolo.posicao + offset, Lsimb2->simbolo.posicao + offset2);
-            } 
+            }
             else{
               erroCompilacao = 1;
-              printf("\nERRO >> erro sintático detectado na linha: %s (Instrucao com operandos de tipos invalidos)\n", numLinha);
+              printf("\nERRO >> erro semântico detectado na linha: %s (Instrucao com operandos de tipos invalidos)\n", numLinha);
             }
           }
           else{
             erroCompilacao = 1;
-                printf("\nERRO >> erro sintático detectado na linha: %s (Simbolo nao definido!)\n", numLinha);
+                printf("\nERRO >> erro semântico detectado na linha: %s (Simbolo nao definido!)\n", numLinha);
           }
-        } 
+        }
         else if(instrucao == 10 || instrucao == 11){ /*STORE, INPUT*/
           rotulo = separaTokenDoOffset(tokens[instPos+1], &offset);
           Lsimb1 = procuraSimbolo(rotulo);
@@ -496,27 +515,27 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
             verificaEspacoAlocado(Lsimb1->simbolo, offset, numLinha);
             if(Lsimb1->simbolo.tipo == VARIAVEL){
               fprintf(fpfinal, "%s %d ", instrucoes[instrucao].opcode, Lsimb1->simbolo.posicao + offset);
-            } 
+            }
             else if(Lsimb1->simbolo.tipo == CONSTANTE){
               erroCompilacao = 1;
-              printf("\nERRO >> erro sintático detectado na linha: %s (Tentativa de mudanca de valor constante)\n", numLinha);            
-            } 
+              printf("\nERRO >> erro semântico detectado na linha: %s (Tentativa de mudanca de valor constante)\n", numLinha);
+            }
             else{
               erroCompilacao = 1;
-              printf("\nERRO >> erro sintático detectado na linha: %s (Instrucao com operandos de tipos invalidos)\n", numLinha);
+              printf("\nERRO >> erro semântico detectado na linha: %s (Instrucao com operandos de tipos invalidos)\n", numLinha);
             }
           }
           else{
             erroCompilacao = 1;
-                printf("\nERRO >> erro sintático detectado na linha: %s (Simbolo nao definido!)\n", numLinha);
+                printf("\nERRO >> erro semântico detectado na linha: %s (Simbolo nao definido!)\n", numLinha);
           }
-        } 
+        }
         else if(instrucao == 13){ /*STOP*/
           quantStops++;
           fprintf(fpfinal, "%s ", instrucoes[instrucao].opcode);
         }
       }
-    } 
+    }
     else if (strcasecmp(tokens[0], "SECTION") != 0 && i != 0) { /*Se for uma diretiva...*/
       diretiva = procuraDiretiva(tokens[instPos], expParams);
       switch (diretiva) {
@@ -524,27 +543,27 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
           fprintf(fpfinal, "0 ");
           break;
         case 3: /*SPACE com argumentos*/
-          if((tokens[instPos+1][0]=='0' && (tokens[instPos+1][1]=='x' || tokens[instPos+1][1]=='X')) || 
+          if((tokens[instPos+1][0]=='0' && (tokens[instPos+1][1]=='x' || tokens[instPos+1][1]=='X')) ||
             (tokens[instPos+1][1]=='0' && (tokens[instPos+1][2]=='x' || tokens[instPos+1][2]=='X'))) /*Se os primeiros caracteres forem 0x ou 0X ou -0x ou -0X, entao le como hexa*/
             sscanf(tokens[instPos+1], "%x", &operando);
           else sscanf(tokens[instPos+1], "%d", &operando); /*senao, le como decimal mesmo*/
           if(operando > 0){
             for(j=0; j<operando; j++) fprintf(fpfinal, "0 ");
-          } 
+          }
           else {
             erroCompilacao = 1;
-            printf("\nERRO >> erro sintático detectado na linha: %s (Operando invalido para essa diretiva)\n", numLinha);
+            printf("\nERRO >> erro semântico detectado na linha: %s (Operando invalido para essa diretiva)\n", numLinha);
           }
           break;
         case 4: /*CONST*/
-          if((tokens[instPos+1][0]=='0' && (tokens[instPos+1][1]=='x' || tokens[instPos+1][1]=='X')) || 
+          if((tokens[instPos+1][0]=='0' && (tokens[instPos+1][1]=='x' || tokens[instPos+1][1]=='X')) ||
             (tokens[instPos+1][1]=='0' && (tokens[instPos+1][2]=='x' || tokens[instPos+1][2]=='X'))) /*Se os primeiros caracteres forem 0x ou 0X ou -0x ou -0X, entao le como hexa*/
             sscanf(tokens[instPos+1], "%x", &operando);
           else sscanf(tokens[instPos+1], "%d", &operando); /*senao, le como decimal mesmo*/
           fprintf(fpfinal, "%d ", operando);
           break;
       }
-    }   
+    }
   }
 }
 
