@@ -44,7 +44,7 @@ int separaTokens(FILE *fp, char tokens[10][50]);
 void getNumLinha(char *dest, const char *token);
 void validaTokens(int i, char tokens[10][50], const char *numLinha, int instPos);
 void validaSecao(const char tokens[10][50], const char *numLinha);
-int getInstPos(const char tokens[10][50], const char *numLinha, int i);
+int getInstPos(const char tokens[10][50], const char *numLinha, int i, int passagem);
 int calculaEspaco(const char tokens[10][50], const char *numLinha, int instPos, int i);
 
 void primeiraPassagem(FILE *fp);

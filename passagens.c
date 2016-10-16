@@ -165,7 +165,7 @@ int separaTokens(FILE *fp, char tokens[10][50]) {
 	strcpy(tokens[0], aux);
 	for(i=1; i<NUM_TOKENS; i++){
 		aux = strtok(NULL, " ,\t");
-		if(aux == NULL) break; /*se a linha ja tiver acabado, antes de completar os 5 elementos, acaba com o loop*/
+		if(aux == NULL) break; /*se a linha ja tiver acabado, antes de completar os 10 elementos, acaba com o loop*/
 		strcpy(tokens[i], aux);
 	}
   i--; /*faz i apontar para ultimo token valido*/
@@ -190,19 +190,21 @@ void getNumLinha(char *dest, const char *token) {
 }
 
 void validaTokens(int i, char tokens[10][50], const char *numLinha, int instPos) {
-  int k, j, errTok = 0;
+  int k, j, errTok = 0, digito = 0;
   for (k = 0; k < i; k++) {
     if (tokens[k] != NULL){
-      if (!isalpha(tokens[k][0]) && tokens[k][0] != '_' && strlen(tokens[k]) != 1 ) {
+      if (!isalnum(tokens[k][0]) && tokens[k][0] != '_') {
         printf("\nERRO >> erro léxico detectado na linha: %s (Token '%s' invalido)\n", numLinha, tokens[k]);
         erroCompilacao = 1;
       }
+      if (isdigit(tokens[k][0])) digito = 1;
       for (j = 1; j < strlen(tokens[k]); j++) {
         if (!isalnum(tokens[k][j]) && tokens[k][j] != '_') {
-          if (!(j == strlen(tokens[k]) - 1 && (tokens[k][j] == ':' && k == 0)) && !(tokens[k][j] == '+' && isdigit(tokens[k][j+1]) && isalpha(tokens[k][j-1]))){
+          if (!(j == strlen(tokens[k]) - 1 && (tokens[k][j] == ':')) && !(tokens[k][j] == '+' && isdigit(tokens[k][j+1]) && isalpha(tokens[k][j-1]))){
             errTok = 1;
           }
         }
+        if (isalpha(tokens[k][j]) && digito == 1) errTok = 1;
       }
       if (errTok == 1) {
         printf("\nERRO >> erro léxico detectado na linha: %s (Token '%s' invalido)\n", numLinha, tokens[k]);
@@ -231,13 +233,15 @@ void validaSecao(const char tokens[10][50], const char *numLinha) {
   }
 }
 
-int getInstPos(const char tokens[10][50], const char *numLinha, int i) {
+int getInstPos(const char tokens[10][50], const char *numLinha, int i, int passagem) {
   int instPos = 0, k;
   if (strchr(tokens[0], ':') != NULL) {
     for (k = 1; k < i + 1; k++) {
       if (strchr(tokens[k], ':') != NULL) {
-        erroCompilacao = 1;
-        printf("\nERRO >> erro sintático detectado na linha: %s (Dois labels declarados na mesma linha)\n", numLinha);
+        if (passagem == 1){
+          erroCompilacao = 1;
+          printf("\nERRO >> erro sintático detectado na linha: %s (Dois labels declarados na mesma linha)\n", numLinha);
+        }
         return (k == 1 ? 2 : 1);
       }
     }
@@ -247,7 +251,7 @@ int getInstPos(const char tokens[10][50], const char *numLinha, int i) {
 }
 
 int calculaEspaco(const char tokens[10][50], const char *numLinha, int instPos, int i) {
-  int instrucao = -4, diretiva = -4, espaco = 0;
+  int instrucao = -4, diretiva = -4, espaco = 0, j = 0, errVal = 0;
   int expParams = i - instPos - 1;
 
   if (secText == 1 && strcasecmp(tokens[0], "SECTION") != 0 && i != 0) {
@@ -285,7 +289,14 @@ int calculaEspaco(const char tokens[10][50], const char *numLinha, int instPos, 
       espaco = diretivas[diretiva].espaco;
       /*O espaco eh usado diferente para space com parametros, o espaco eh ocupado pelo valor passado como parametro*/
       if (strcasecmp(diretivas[diretiva].nome, "SPACE") == 0 && diretivas[diretiva].operandos == 1) {
-        if (isdigit(tokens[instPos + 1][0])) {
+        /*verifica se o valor passado como parametro para space eh valido*/
+        for (j = 0; j < strlen(tokens[instPos + 1]); j++) {
+          if (!isdigit(tokens[instPos + 1][j])) {
+            errVal = 1;
+            break;
+          }
+        }
+        if (errVal == 0) {
           espaco *= atoi(tokens[instPos + 1]);
         }
 
@@ -309,7 +320,7 @@ void primeiraPassagem(FILE *fp){
     getNumLinha(numLinha, tokens[i]);
 
     /*Verifica se a instrucao eh o primeiro ou segundo token*/
-    instPos = getInstPos(tokens, numLinha, i);
+    instPos = getInstPos(tokens, numLinha, i, 1);
 
     /*verifica se os tokens sao validos*/
     validaTokens(i, tokens, numLinha, instPos);
@@ -407,7 +418,7 @@ void segundaPassagem(FILE *fp, FILE *fpfinal){
     getNumLinha(numLinha, tokens[i]);
 
     /*Verifica se a instrucao eh o primeiro ou segundo token (ou seja, o indice 0 ou 1 do vetor de tokens)*/
-    instPos = getInstPos(tokens, numLinha, i);
+    instPos = getInstPos(tokens, numLinha, i, 2);
 
     /*checa se a secao atual eh a de texto ou a de dados, modificando a flag secText*/
     verificaSecaoAtual(tokens);
